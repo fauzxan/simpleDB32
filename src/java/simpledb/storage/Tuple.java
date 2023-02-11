@@ -16,6 +16,8 @@ public class Tuple implements Serializable {
     private static final long serialVersionUID = 1L;
     private TupleDesc td;
     private RecordId recordId;
+    private int numFields;
+    private ArrayList fieldsList;
     /**
      * Create a new tuple with the specified schema (type).
      *
@@ -27,9 +29,9 @@ public class Tuple implements Serializable {
     public Tuple(TupleDesc td) {
         // some code goes here
         Iterator<TDItem> iterator = td.iterator();
-        if (!iterator.hasNext()){
-            System.out.println("Tuple does not have any items");
 
+        if (!iterator.hasNext()){ // if its empty
+            System.out.println("Tuple does not have any items");
         }
         else{
             while (iterator.hasNext()){
@@ -45,6 +47,8 @@ public class Tuple implements Serializable {
         }
         this.td = td;
         this.recordId = null;
+        this.numFields = td.numFields();
+        this.fieldsList = new ArrayList<>();
         
     }
 
@@ -67,18 +71,29 @@ public class Tuple implements Serializable {
      *
      * @param rid
      *            the new RecordId for this tuple.
+     * DONE
      */
     public void setRecordId(RecordId rid) {
         // some code goes here
-        this.recordId = rid;
+        if (this.getTupleDesc() != null){
+            this.recordId = rid;
+        }
+        else{
+            this.recordId = null;
+        }
+
+
     }
     /**
      * @return The RecordId representing the location of this tuple on disk. May
      *         be null.
+     * DONE
      */
     public RecordId getRecordId() {
         // some code goes here
-        // return null;
+        if (this.getTupleDesc() == null){
+            return null;
+        }
         return this.recordId;
     }
 
@@ -92,8 +107,19 @@ public class Tuple implements Serializable {
      * @param f
      *            new value for the field.
      */
-    public void setField(int i, Field f) {
+    public void setField(int i, Field f) throws Exception {
         // some code goes here
+        if (i>= 0 && i<this.numFields){ // list index must be in range
+            if (td.getFieldType(i) == f.getType()){// the domain of the field must match the type of field f
+                this.fieldsList.add(i, f);
+            }
+            else{
+                System.out.println("Inconsistent domains")
+            }
+        }
+        else{
+            System.out.println("Index out of range");
+        }
     }
 
     /**
@@ -104,7 +130,12 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // some code goes here
-        return null;
+        if (i<this.numFields && i>=0){
+            return this.fieldsList.get(i);
+        }
+        else{
+            System.out.println("Invalid index to retrieve!")
+        }
     }
 
     /**
@@ -117,7 +148,13 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+        StringBuffer sb = new StringBuffer("");
+        for (Field x: this.fieldsList){
+            sb.append(x);
+            sb.append("\t");
+        }
+//        throw new UnsupportedOperationException("Implement this");
+        return sb;
     }
 
     /**
@@ -127,6 +164,9 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields()
     {
         // some code goes here
+        if (this.numFields>0){
+            return fieldsList.iterator();
+        }
         return null;
     }
 
@@ -136,5 +176,8 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         // some code goes here
+        this.fieldsList.removeAll(this.fieldsList);
     }
+
+
 }
