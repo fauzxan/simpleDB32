@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import simpledb.storage.TupleDesc.TDItem;
+
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
  * specified schema specified by a TupleDesc object and contain Field objects
@@ -20,31 +22,45 @@ public class Tuple implements Serializable {
      * @param td
      *            the schema of this tuple. It must be a valid TupleDesc
      *            instance with at least one field.
+     * DONE
      */
     public Tuple(TupleDesc td) {
         // some code goes here
+        Iterator<TDItem> iterator = td.iterator();
+        if (!iterator.hasNext()){
+            System.out.println("Tuple does not have any items");
+
+        }
+        else{
+            while (iterator.hasNext()){
+                TDItem element = iterator.next();
+                if (element.fieldName instanceof String && element.fieldType!=null){
+                    continue;
+                }
+                else{
+                    System.out.println("Invalid pair in tuple!");
+                }
+            }
+
+        }
         this.td = td;
         this.recordId = null;
+        
     }
 
     /**
      * @return The TupleDesc representing the schema of this tuple.
+     * DONE
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
+        if (this.td == null ){
+            return null;
+        }
         return this.td;
         // return null;
     }
 
-    /**
-     * @return The RecordId representing the location of this tuple on disk. May
-     *         be null.
-     */
-    public RecordId getRecordId() {
-        // some code goes here
-        // return null;
-        return this.recordId;
-    }
+
 
     /**
      * Set the RecordId information for this tuple.
@@ -56,6 +72,17 @@ public class Tuple implements Serializable {
         // some code goes here
         this.recordId = rid;
     }
+    /**
+     * @return The RecordId representing the location of this tuple on disk. May
+     *         be null.
+     */
+    public RecordId getRecordId() {
+        // some code goes here
+        // return null;
+        return this.recordId;
+    }
+
+    
 
     /**
      * Change the value of the ith field of this tuple.
