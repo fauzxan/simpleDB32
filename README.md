@@ -23,4 +23,3 @@ In addition to the academic integrity policy (as discussed in the lecture), take
 ### Acknowledgement
 The labs are modified from the MIT 6830 course. We thank the MIT staff for the materials.
 
-#Test Commit
