@@ -114,7 +114,7 @@ public class Tuple implements Serializable {
                 this.fieldsList.add(i, f);
             }
             else{
-                System.out.println("Inconsistent domains")
+                System.out.println("Inconsistent domains");
             }
         }
         else{
@@ -134,7 +134,7 @@ public class Tuple implements Serializable {
             return this.fieldsList.get(i);
         }
         else{
-            System.out.println("Invalid index to retrieve!")
+            System.out.println("Invalid index to retrieve!");
         }
     }
 
