@@ -23,12 +23,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+    // Key: integer file.getId()
+    // Value:
+    Map<Integer, ArrayList<String>> catalog;
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
         // some code goes here
+        this.catalog = new HashMap<Integer, ArrayList<String>>();
+
     }
 
     /**
@@ -42,6 +47,8 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        this.catalog.put(file.getId(), new ArrayList<String>(
+                Arrays.asList(name, pkeyField)));
     }
 
     public void addTable(DbFile file, String name) {
@@ -65,6 +72,15 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
+
+        for (Map.Entry<Integer, ArrayList<String>> set :
+                this.catalog.entrySet()) {
+            if (set.getValue().contains(name)){
+                return set.getKey();
+            }
+
+        }
+
         return 0;
     }
 
@@ -76,7 +92,11 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        for (Map.Entry<Integer, ArrayList<String>> set : this.catalog.entrySet()) {
+            if (set.getKey() == tableid) return set.getValue(); // You might have to return tuple desc instead, which is a method in dbFile.
+        }
+        throw new NoSuchElementException();
+        }
     }
 
     /**

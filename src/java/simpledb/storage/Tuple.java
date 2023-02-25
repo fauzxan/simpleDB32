@@ -18,7 +18,7 @@ public class Tuple implements Serializable {
     private TupleDesc td;
     private RecordId recordId;
     private int numFields;
-    private ArrayList fieldsList;
+    private ArrayList<Field> fieldsList;
     /**
      * Create a new tuple with the specified schema (type).
      *
@@ -112,7 +112,7 @@ public class Tuple implements Serializable {
         // some code goes here
         if (i>= 0 && i<this.numFields){ // list index must be in range
             if (td.getFieldType(i) == f.getType()){// the domain of the field must match the type of field f
-                this.fieldsList.add(i, f);
+                this.fieldsList.set(i, f);
             }
             else{
                 System.out.println("Inconsistent domains");
@@ -155,7 +155,7 @@ public class Tuple implements Serializable {
             sb.append("\t");
         }
 //        throw new UnsupportedOperationException("Implement this");
-        return sb;
+        return sb.toString();
     }
 
     /**
