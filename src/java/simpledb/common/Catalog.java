@@ -21,10 +21,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @Threadsafe
  */
-public class Catalog {
+public class Catalog implements DBFile {
 
-    // Key: integer file.getId()
-    // Value:
+    // Marked for review- did not find implementation of getId() anywhere else
+    @Override
+    int getId() {
+        return file.getHashCode();
+    }
     Map<Integer, ArrayList<String>> catalog;
     /**
      * Constructor.
@@ -47,6 +50,7 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+
         this.catalog.put(file.getId(), new ArrayList<String>(
                 Arrays.asList(name, pkeyField)));
     }
@@ -73,15 +77,11 @@ public class Catalog {
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
 
-        for (Map.Entry<Integer, ArrayList<String>> set :
-                this.catalog.entrySet()) {
-            if (set.getValue().contains(name)){
-                return set.getKey();
-            }
-
+        for (Integer key: this.catalog.keySet()){
+            if (this.catalog.get(key)[0] == name) return key;
         }
 
-        return 0;
+        throw new NoSuchElementException();
     }
 
     /**
@@ -89,6 +89,7 @@ public class Catalog {
      * @param tableid The id of the table, as specified by the DbFile.getId()
      *     function passed to addTable
      * @throws NoSuchElementException if the table doesn't exist
+     * This method returns the entire value present at that file ID
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
@@ -112,7 +113,10 @@ public class Catalog {
 
     public String getPrimaryKey(int tableid) {
         // some code goes here
-        return null;
+        if (this.catalog.containsKey(id)){
+            return this.catalog.get(id)[1];
+        }
+        else return "Table ID does not exist!"
     }
 
     public Iterator<Integer> tableIdIterator() {
@@ -122,12 +126,18 @@ public class Catalog {
 
     public String getTableName(int id) {
         // some code goes here
-        return null;
+        if (this.catalog.containsKey(id)){
+            return this.catalog.get(id)[0];
+        }
+        else return "Table ID does not exist!"
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
         // some code goes here
+        for (Integer key: this.catalog.keySet()){
+            this.catalog.remove(key)
+        }
     }
     
     /**
