@@ -10,6 +10,10 @@ import java.util.*;
  */
 public class TupleDesc implements Serializable {
 
+    private int numFields;
+
+    private TDItem[] tdAr;
+
     /**
      * A help class to facilitate organizing the information of each field
      * */
@@ -48,11 +52,11 @@ public class TupleDesc implements Serializable {
     }
     private class TDIterator implements Iterator<TDItem>{
         private int p = 0;
-        @Overrirde
+        @Override
         public boolean hasNext(){
             return tdAr.length > p;
         }
-        @Overrirde
+        @Override
         public TDItem next(){
             if(hasNext()){
                 throw new NoSuchElementException();
@@ -77,12 +81,12 @@ public class TupleDesc implements Serializable {
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
         // some code goes here
         this.numFields = typeAr.length;
-        this.fieldTypes = new Type[numFields];
-        this.fieldNames = new String[numFields];
+        this.fieldType = new Type[numFields];
+        this.fieldName = new String[numFields];
 
         for (int i=0; i<this.numFields; i++){
-            fieldTypes[i] = typeAr[i];
-            fieldNames[i] = fieldAr[i];
+            fieldType[i] = typeAr[i];
+            fieldName[i] = fieldAr[i];
         }
 
     }
@@ -98,12 +102,12 @@ public class TupleDesc implements Serializable {
     public TupleDesc(Type[] typeAr) {
         // some code goes here
         this.numFields = typeAr.length;
-        this.fieldTypes = new Type[numFields];
-        this.fieldNames = new String[numFields];
+        this.fieldType = new Type[numFields];
+        this.fieldName = new String[numFields];
 
         for (int i=1; i<this.numFields; i++){
-            fieldTypes[i] = typeAr[i];
-            fieldNames[i] = null;
+            fieldType[i] = typeAr[i];
+            fieldName[i] = null;
         }
     }
 
@@ -128,7 +132,7 @@ public class TupleDesc implements Serializable {
         // some code goes here
         if (i >= this.numFields)
             throw new NoSuchElementException();
-        return this.fieldNames[i];
+        return this.fieldName[i];
     }
 
     /**
@@ -145,7 +149,7 @@ public class TupleDesc implements Serializable {
         // some code goes here
         if (i >= this.numFields)
             throw new NoSuchElementException();
-        return this.fieldTypes[i];
+        return this.fieldType[i];
     }
 
     /**
@@ -160,10 +164,10 @@ public class TupleDesc implements Serializable {
     public int fieldNameToIndex(String name) throws NoSuchElementException {
         // some code goes here
         for(int i=0; i<= this.numFields; i++){
-            if(fieldNames[i]== null){
+            if(fieldName[i]== null){
                 throw new NoSuchElementException();
             }
-            if(fieldNames[i].equals(name))
+            if(fieldName[i].equals(name))
                 return i;
         }
         throw new NoSuchElementException();
@@ -177,7 +181,7 @@ public class TupleDesc implements Serializable {
         // some code goes here
         int size =0;
         for(int i =0; i <= this.numFields; i++){
-            size += fieldTypes[i].getLength();
+            size += fieldType[i].getLength();
         }
         return size;
     }
@@ -257,9 +261,9 @@ public class TupleDesc implements Serializable {
         // some code goes here
         String tupledescriptorstr = new String();
         for (int i=0; i<this.numFields; i++){
-            tupledescriptorstr += fieldTypes[i];
+            tupledescriptorstr += fieldType[i];
             tupledescriptorstr += "(";
-            tupledescriptorstr += fieldNames[i];
+            tupledescriptorstr += fieldName[i];
             tupledescriptorstr += "),";
         }
         return tupledescriptorstr;
