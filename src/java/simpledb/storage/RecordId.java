@@ -1,6 +1,7 @@
 package simpledb.storage;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * A RecordId is a reference to a specific tuple on a specific page of a

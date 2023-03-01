@@ -21,23 +21,57 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @Threadsafe
  */
-public class Catalog implements DBFile {
+public class Catalog {
 
     // Marked for review- did not find implementation of getId() anywhere else
-    @Override
-    int getId() {
-        return file.getHashCode();
-    }
-    Map<Integer, ArrayList<String>> catalog;
+
+
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
+    public ConcurrentHashMap<Integer, Table> catalog;
+    Table table;
+
+    public class Table{
+        TupleDesc td;
+        String primaryKey;
+        String name;
+        DbFile dbFile;
+        public Table(TupleDesc td, String pk, String name, DbFile dbFile){
+            this.td = td;
+            this.primaryKey = pk;
+            this.name = name;
+            this.dbFile = dbFile;
+        }
+    }
+
+    /**
+     * Carry out the necessary checks for creating the table
+     * @param file file cannot be null
+     * @param name must not be null. It can be empty
+     * @param pkeyField Cannot be null or empty
+     * @return An instantiated Table object
+     */
+    public Table createTable(DbFile file, String name, String pkeyField) throws NullPointerException{
+        if (file == null || name == null || pkeyField == null){
+            throw new NullPointerException("Null value during the creation of Table object!");
+        }
+        if (pkeyField == ""){
+            throw new NullPointerException("Empty primary key field detected!");
+        }
+        return new Table(file.getTupleDesc(), pkeyField, name, file);
+    }
+
+
+
+
     public Catalog() {
         // some code goes here
-        this.catalog = new HashMap<Integer, ArrayList<String>>();
-
+        this.catalog = new ConcurrentHashMap<Integer, Table>();
     }
+
+
 
     /**
      * Add a new table to the catalog.
@@ -48,11 +82,17 @@ public class Catalog implements DBFile {
      * @param name the name of the table -- may be an empty string.  May not be null.  
      * @param pkeyField the name of the primary key field
      */
+
+
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        if (this.catalog.containsKey(file.getId())){
+            this.catalog.remove(file.getId());
+        }
 
-        this.catalog.put(file.getId(), new ArrayList<String>(
-                Arrays.asList(name, pkeyField)));
+        this.table = this.createTable(file, name, pkeyField);
+
+        this.catalog.put(file.getId(), this.table);
     }
 
     public void addTable(DbFile file, String name) {
@@ -78,10 +118,10 @@ public class Catalog implements DBFile {
         // some code goes here
 
         for (Integer key: this.catalog.keySet()){
-            if (this.catalog.get(key)[0] == name) return key;
+            if (this.catalog.get(key).name == name) return key;
         }
 
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("While looking for name within catalog, no such name was found!");
     }
 
     /**
@@ -93,12 +133,15 @@ public class Catalog implements DBFile {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
-        for (Map.Entry<Integer, ArrayList<String>> set : this.catalog.entrySet()) {
-            if (set.getKey() == tableid) return set.getValue(); // You might have to return tuple desc instead, which is a method in dbFile.
+        if (!this.catalog.containsKey(tableid)){
+            throw new NoSuchElementException("While looking carrying out getTupleDesc, couldn't find key with parameter passed");
         }
-        throw new NoSuchElementException();
+        else{
+            return this.catalog.get(tableid).td;
         }
+
     }
+
 
     /**
      * Returns the DbFile that can be used to read the contents of the
@@ -108,35 +151,50 @@ public class Catalog implements DBFile {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        if (!this.catalog.containsKey(tableid)){
+            throw new NoSuchElementException("While looking carrying out getDatabaseFile, couldn't find key with parameter passed");
+        }
+        else{
+            return this.catalog.get(tableid).dbFile;
+        }
     }
 
-    public String getPrimaryKey(int tableid) {
+    public String getPrimaryKey(int tableid) throws NoSuchElementException{
+        // some code goes here
+        if (!this.catalog.containsKey(tableid)){
+            throw new NoSuchElementException("While looking carrying out getPrimaryKey, couldn't find key with parameter passed");
+        }
+        else{
+            return this.catalog.get(tableid).primaryKey;
+        }
+    }
+
+    public Iterator<Integer> tableIdIterator(){
+        // some code goes here
+        try{
+            return this.catalog.keySet().iterator();
+        }
+        catch(Exception e){
+            System.out.println("\nWhile getting catalog iterator, the following error occurred:\n");
+            System.out.println(e);
+        }
+    }
+
+    public String getTableName(int id) throws NoSuchElementException{
         // some code goes here
         if (this.catalog.containsKey(id)){
-            return this.catalog.get(id)[1];
+            return this.catalog.get(id).name;
         }
-        else return "Table ID does not exist!"
-    }
-
-    public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
-    }
-
-    public String getTableName(int id) {
-        // some code goes here
-        if (this.catalog.containsKey(id)){
-            return this.catalog.get(id)[0];
-        }
-        else return "Table ID does not exist!"
+        else{
+            throw new NoSuchElementException("While looking carrying out getTableName, couldn't find key with parameter passed");
+        };
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
         // some code goes here
         for (Integer key: this.catalog.keySet()){
-            this.catalog.remove(key)
+            this.catalog.remove(key);
         }
     }
     
