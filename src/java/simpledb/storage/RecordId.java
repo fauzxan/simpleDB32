@@ -2,6 +2,7 @@ package simpledb.storage;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 /**
  * A RecordId is a reference to a specific tuple on a specific page of a
@@ -11,6 +12,8 @@ public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
     ArrayList<Integer> rid;
+    PageId pid;
+    Integer tupleno;
 
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
@@ -23,31 +26,32 @@ public class RecordId implements Serializable {
      */
     public RecordId(PageId pid, int tupleno) {
         // some code goes here
-        this.rid = new ArrayList<Integer>(2);
-        this.rid.add(pid.getTableId());
-        this.rid.add(tupleno);
+        this.pid = pid;
+        this.tupleno = tupleno;
     }
 
     /**
      * @return the tuple number this RecordId references.
      */
-    public int getTupleNumber() {
+    public int getTupleNumber() throws NoSuchElementException{
         // some code goes here
-        if (rid.size() == 2){
-            return this.rid.get(1);
+        if (this.tupleno != null) {
+            return this.tupleno;
         }
-        return 0;
+        else throw new NoSuchElementException("No such tupleno");
     }
 
     /**
      * @return the page id this RecordId references.
      */
-    public PageId getPageId() {
+    public PageId getPageId() throws NoSuchElementException{
         // some code goes here
-        if (rid.size() == 2){
-            return this.rid.get(0);
+        if (this.pid != null) {
+            return this.pid;
         }
-        return null;
+        else {
+            throw new NoSuchElementException();;
+        }
     }
 
     /**
@@ -59,12 +63,7 @@ public class RecordId implements Serializable {
     @Override
     public boolean equals(Object o) {
         // some code goes here
-        if (this.rid == o.rid){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return this.hashCode() == o.hashCode();
         // throw new UnsupportedOperationException("implement this");
     }
 
@@ -77,12 +76,8 @@ public class RecordId implements Serializable {
     @Override
     public int hashCode() {
         // some code goes here
-        if (this.rid.size() != 0){
-            return this.rid.hashCode();
-        }
-        else{
-            return -1;
-        }
+        String hashitem = this.tupleno.toString() + "," + this.pid.toString();
+        return hashitem.hashCode();
 
         // throw new UnsupportedOperationException("implement this");
 
