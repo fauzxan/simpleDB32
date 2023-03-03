@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @Threadsafe
  */
+
+
 public class Catalog {
 
     // Marked for review- did not find implementation of getId() anywhere else
@@ -31,8 +33,6 @@ public class Catalog {
      * Creates a new, empty catalog.
      */
     public ConcurrentHashMap<Integer, Table> catalog;
-    Table table;
-
     public class Table{
         TupleDesc td;
         String primaryKey;
@@ -46,6 +46,7 @@ public class Catalog {
         }
     }
 
+
     /**
      * Carry out the necessary checks for creating the table
      * @param file file cannot be null
@@ -58,7 +59,8 @@ public class Catalog {
             throw new NullPointerException("Null value during the creation of Table object!");
         }
         if (pkeyField == ""){
-            throw new NullPointerException("Empty primary key field detected!");
+//            throw new NullPointerException("Empty primary key field detected!");
+            System.out.println("Warning: Primary Key field is '' | Catalog.java | createTable(file, name, pkeyField)");
         }
         return new Table(file.getTupleDesc(), pkeyField, name, file);
     }
@@ -90,9 +92,8 @@ public class Catalog {
             this.catalog.remove(file.getId());
         }
 
-        this.table = this.createTable(file, name, pkeyField);
 
-        this.catalog.put(file.getId(), this.table);
+        this.catalog.put(Integer.valueOf(file.getId()).hashCode(), this.createTable(file, name, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
@@ -134,13 +135,17 @@ public class Catalog {
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
         if (!this.catalog.containsKey(tableid)){
-            throw new NoSuchElementException("While looking carrying out getTupleDesc, couldn't find key with parameter passed");
+            throw new NoSuchElementException("Couldn't find key with parameter passed | Catalog.java | getTupleDesc(tableid)");
         }
         else{
             return this.catalog.get(tableid).td;
         }
 
     }
+    /**
+     * Expected: simpledb.storage.TupleDesc<Fields: null(INT_TYPE), null(INT_TYPE), 2 Fields in total>
+     * Result:   simpledb.storage.TupleDesc<Fields: null(INT_TYPE), null(INT_TYPE), 2 Fields in total>
+     */
 
 
     /**

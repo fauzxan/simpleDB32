@@ -115,7 +115,7 @@ public class TupleDesc implements Serializable {
     }
     private TupleDesc(TDItem[] tdItems) {
         if (tdItems == null || tdItems.length == 0) {
-            throw new IllegalArgumentException("tdItem数组必须非空且至少包含一个元素");
+            throw new IllegalArgumentException("tdItem");
         }
         this.tdAr = tdItems;
         this.numFields = tdItems.length;
@@ -242,28 +242,30 @@ public class TupleDesc implements Serializable {
 
     public boolean equals(Object o) {
         // some code goes here
-        if (this == o) {
-            return true;
-        }
-        if (o instanceof TupleDesc) {
-            TupleDesc another = (TupleDesc) o;
-            if (!(another.numFields() == this.numFields())) {
-                return false;
-            }
-            for (int i = 0; i < numFields(); i++) {
-                if (!tdAr[i].equals(another.tdAr[i])) {
-                    return false;
-                }
-            }
-            return true;
-        } else return false;
+//        if (this == o) {
+//            return true;
+//        }
+//        if (o instanceof TupleDesc) {
+//            TupleDesc another = (TupleDesc) o;
+//            if (!(another.numFields() == this.numFields())) {
+//                return false;
+//            }
+//            for (int i = 0; i < numFields(); i++) {
+//                if (!tdAr[i].equals(another.tdAr[i])) {
+//                    return false;
+//                }
+//            }
+//            return true;
+//        } else return false;
+        System.out.println(this.toString());
+        return o.hashCode() == this.hashCode();
     }
 
     public int hashCode() {
         // If you want to use TupleDesc as keys for HashMap, implement this so
         // that equal objects have equals hashCode() results
-
-        throw new UnsupportedOperationException("unimplemented");
+        return this.toString().hashCode();
+//        throw new UnsupportedOperationException("unimplemented");
     }
 
     /**
