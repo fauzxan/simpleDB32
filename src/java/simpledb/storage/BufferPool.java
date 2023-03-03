@@ -77,14 +77,13 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
-        throws TransactionAbortedException, DbException, DeadlockException{
+    public  Page getPage(TransactionId tid, PageId pid, Permissions perm){
             if (this.cache.containsKey(pid)) {
                 return this.cache.get(pid);
             }
             else {
                 if (this.cache.size() >=this.maxNumPages){
-                    throw new DbException("Max number of pages exceeded");
+                    System.out.println("Max number of pages exceeded");
                 }
                 DbFile dbfile = Database.getCatalog().getDatabaseFile(pid.getTableId());
                 Page newPage = dbfile.readPage(pid);

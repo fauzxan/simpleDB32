@@ -3,7 +3,7 @@ package simpledb.storage;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.ArrayList;
+import java.util.HashMap;
 
 import simpledb.storage.TupleDesc.TDItem;
 
@@ -18,7 +18,7 @@ public class Tuple implements Serializable {
     private TupleDesc td;
     private RecordId recordId;
     private int numFields;
-    private ArrayList<Field> fieldsList;
+    private HashMap<Integer, Field> fieldsList;
     /**
      * Create a new tuple with the specified schema (type).
      *
@@ -34,22 +34,22 @@ public class Tuple implements Serializable {
         if (!iterator.hasNext()){ // if its empty
             System.out.println("Tuple does not have any items");
         }
-        else{
-            while (iterator.hasNext()){
-                TDItem element = iterator.next();
-                if (element.fieldName instanceof String && element.fieldType!=null){
-                    continue;
-                }
-                else{
-                    System.out.println("Invalid pair in tuple!");
-                }
-            }
-
-        }
+//        else{
+//            while (iterator.hasNext()){
+//                TDItem element = iterator.next();
+//                if (element.fieldName instanceof String){
+//                    continue;
+//                }
+//                else{
+//                    System.out.println("Invalid pair in tuple!");
+//                }
+//            }
+//
+//        }
         this.td = td;
         this.recordId = null;
         this.numFields = td.numFields();
-        this.fieldsList = new ArrayList<>();
+        this.fieldsList = new HashMap<Integer, Field>();
         
     }
 
@@ -110,16 +110,14 @@ public class Tuple implements Serializable {
      */
     public void setField(int i, Field f) {
         // some code goes here
-        if (i>= 0 && i<this.numFields){ // list index must be in range
-            if (this.td.getFieldType(i) == f.getType()){// the domain of the field must match the type of field f
-                this.fieldsList.set(i, f);
+
+        if (this.td.getFieldType(i) == f.getType()){
+            if (this.fieldsList.containsKey(i)){
+                this.fieldsList.replace(i, f);
             }
             else{
-                System.out.println("Field types are mismatched | Tuple.java | setField(i,f)");
+                this.fieldsList.put(i, f);
             }
-        }
-        else{
-            System.out.println("Parameter i passed is out of range | Tuple.java | setField(i,f)");
         }
     }
 
@@ -145,8 +143,8 @@ public class Tuple implements Serializable {
     public String toString() {
         // some code goes here
         StringBuffer sb = new StringBuffer("");
-        for (Field x: this.fieldsList){
-            sb.append(x);
+        for (Field x: this.fieldsList.values()){
+            sb.append(x.toString());
             sb.append("\t");
         }
 //        throw new UnsupportedOperationException("Implement this");
@@ -161,7 +159,7 @@ public class Tuple implements Serializable {
     {
         // some code goes here
         if (this.numFields>0){
-            return fieldsList.iterator();
+            return fieldsList.values().iterator();
         }
         return null;
     }
@@ -172,7 +170,7 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         // some code goes here
-        this.fieldsList.removeAll(this.fieldsList);
+        this.fieldsList.clear();
     }
 
 
