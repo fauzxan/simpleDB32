@@ -1782,7 +1782,6 @@ simpledb.transaction.TransactionAbortedException
 ||:simpledb.storage.TupleDesc
 simpledb.storage.TupleDesc$TDIterator
 simpledb.storage.TupleDesc$1
-java.io.PrintStream
 [Lsimpledb.storage.TupleDesc$TDItem;
 simpledb.common.Type
 simpledb.storage.TupleDesc$TDItem

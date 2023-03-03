@@ -184,7 +184,7 @@ public class TupleDesc implements Serializable {
             throw new NoSuchElementException();
         }
         String fieldName;
-        for(int i=0; i<= tdAr.length; i++){
+        for(int i=0; i< tdAr.length; i++){
            
             if((fieldName = tdAr[i].fieldName) != null && fieldName.equals(name)){
                 return i;
@@ -201,7 +201,7 @@ public class TupleDesc implements Serializable {
     public int getSize() {
         // some code goes here
         int size =0;
-        for(int i =0; i <= tdAr.length; i++){
+        for(int i =0; i < tdAr.length; i++){
             size += tdAr[i].fieldType.getLen();
         }
         return size;
@@ -257,14 +257,13 @@ public class TupleDesc implements Serializable {
 //            }
 //            return true;
 //        } else return false;
-        System.out.println(this.toString());
         return o.hashCode() == this.hashCode();
     }
 
     public int hashCode() {
         // If you want to use TupleDesc as keys for HashMap, implement this so
         // that equal objects have equals hashCode() results
-        return this.toString().hashCode();
+        return this.toString().hashCode(); // String versions should have the same hashcode, even if they contain null values.
 //        throw new UnsupportedOperationException("unimplemented");
     }
 
