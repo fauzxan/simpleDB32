@@ -108,18 +108,18 @@ public class Tuple implements Serializable {
      * @param f
      *            new value for the field.
      */
-    public void setField(int i, Field f) throws Exception {
+    public void setField(int i, Field f) {
         // some code goes here
         if (i>= 0 && i<this.numFields){ // list index must be in range
-            if (td.getFieldType(i) == f.getType()){// the domain of the field must match the type of field f
+            if (this.td.getFieldType(i) == f.getType()){// the domain of the field must match the type of field f
                 this.fieldsList.set(i, f);
             }
             else{
-                System.out.println("Inconsistent domains");
+                System.out.println("Field types are mismatched | Tuple.java | setField(i,f)");
             }
         }
         else{
-            System.out.println("Index out of range");
+            System.out.println("Parameter i passed is out of range | Tuple.java | setField(i,f)");
         }
     }
 
@@ -131,12 +131,7 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // some code goes here
-        if (i<this.numFields && i>=0){
-            return this.fieldsList.get(i);
-        }
-        else{
-            System.out.println("Invalid index to retrieve!");
-        }
+        return this.fieldsList.get(i);
     }
 
     /**

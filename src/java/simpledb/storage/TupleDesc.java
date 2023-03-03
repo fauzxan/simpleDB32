@@ -140,9 +140,13 @@ public class TupleDesc implements Serializable {
      */
     public String getFieldName(int i) throws NoSuchElementException {
         // some code goes here
-        if (i >= numFields)
-            throw new NoSuchElementException();
-        return tdAr.fieldName;
+        if (i >= numFields || i<0) {
+            throw new NoSuchElementException("TupleDesc parameter out of bounds | getFieldType");
+        }
+        else{
+            return tdAr[i].fieldName;
+        }
+
     }
 
     /**
@@ -157,9 +161,12 @@ public class TupleDesc implements Serializable {
      */
     public Type getFieldType(int i) throws NoSuchElementException {
         // some code goes here
-        if (i >= numFields || i<0)
-            throw new NoSuchElementException();
-        return tdAr[i].fieldType;
+        if (i >= numFields || i<0) {
+            throw new NoSuchElementException("TupleDesc parameter out of bounds | getFieldType");
+        }
+        else {
+            return tdAr[i].fieldType;
+        }
     }
 
     /**
@@ -195,7 +202,7 @@ public class TupleDesc implements Serializable {
         // some code goes here
         int size =0;
         for(int i =0; i <= tdAr.length; i++){
-            size += tdAr[i].fieldType.getLength();
+            size += tdAr[i].fieldType.getLen();
         }
         return size;
     }

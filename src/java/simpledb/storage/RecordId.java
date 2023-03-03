@@ -11,7 +11,6 @@ import java.util.NoSuchElementException;
 public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    ArrayList<Integer> rid;
     PageId pid;
     Integer tupleno;
 
@@ -44,14 +43,10 @@ public class RecordId implements Serializable {
     /**
      * @return the page id this RecordId references.
      */
-    public PageId getPageId() throws NoSuchElementException{
+    public PageId getPageId(){
         // some code goes here
-        if (this.pid != null) {
             return this.pid;
-        }
-        else {
-            throw new NoSuchElementException();;
-        }
+
     }
 
     /**

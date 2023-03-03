@@ -171,13 +171,8 @@ public class Catalog {
 
     public Iterator<Integer> tableIdIterator(){
         // some code goes here
-        try{
             return this.catalog.keySet().iterator();
-        }
-        catch(Exception e){
-            System.out.println("\nWhile getting catalog iterator, the following error occurred:\n");
-            System.out.println(e);
-        }
+
     }
 
     public String getTableName(int id) throws NoSuchElementException{
@@ -187,7 +182,7 @@ public class Catalog {
         }
         else{
             throw new NoSuchElementException("While looking carrying out getTableName, couldn't find key with parameter passed");
-        };
+        }
     }
     
     /** Delete all tables from the catalog */

@@ -144,12 +144,8 @@ public class SeqScan implements OpIterator {
 
     public void close() {
         // some code goes here
-        try{
             this.iterator.close();
-        }
-        catch (Exception e){
-            throw new Exception("Error occurred while trying to close the connection in SeqScan");
-        }
+
     }
 
     public void rewind() throws DbException, NoSuchElementException,
@@ -158,8 +154,14 @@ public class SeqScan implements OpIterator {
         try{
             this.iterator.rewind();
         }
-        catch (Exception e){
-            throw new Exception("Error occurred while trying to rewind the connection in SeqScan");
+        catch (DbException e1){
+            System.out.println("DbException occurred while trying to rewind the connection in SeqScan | SeqScan.java | rewind");
+        }
+        catch(NoSuchElementException e2){
+            System.out.println("NoSuchElementException occurred while trying to rewind the connection in SeqScan | SeqScan.java | rewind");
+        }
+        catch(TransactionAbortedException e3){
+            System.out.println("TransactionAbortedException occurred while trying to rewind the connection in SeqScan | SeqScan.java | rewind");
         }
     }
 }

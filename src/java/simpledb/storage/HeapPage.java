@@ -76,7 +76,7 @@ public class HeapPage implements Page {
         if(numSlots != 0){
             return numSlots;
         }
-        int numTuples = (BufferPool.DEFAULT_PAGE_SIZE * 8) / ((td.getSize()*8) + 1);
+        int numTuples = (BufferPool.getPageSize() * 8) / ((td.getSize()*8) + 1);
         return numTuples;
 
     }
@@ -347,7 +347,7 @@ public class HeapPage implements Page {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            for (; !isSlotUsed(index); i++) {
+            for (; !isSlotUsed(i); i++) {
             }
             p++;
             return tuples[i++];
