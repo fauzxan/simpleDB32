@@ -73,9 +73,6 @@ public class RecordId implements Serializable {
         // some code goes here
         String hashitem = this.tupleno.toString() + "," + this.pid.toString();
         return hashitem.hashCode();
-
-        // throw new UnsupportedOperationException("implement this");
-
     }
 
 }

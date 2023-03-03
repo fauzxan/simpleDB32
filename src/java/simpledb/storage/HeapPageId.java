@@ -48,7 +48,6 @@ public class HeapPageId implements PageId {
         // some code goes here
         return Arrays.hashCode(this.data);
 
-        //throw new UnsupportedOperationException("implement this");
     }
 
     /**
@@ -58,7 +57,7 @@ public class HeapPageId implements PageId {
      * @return true if the objects are equal (e.g., page numbers and table
      *   ids are the same)
      */
-    public boolean equald(Object o) {
+    public boolean equals(Object o) {
         // some code goes here
         if (!(o instanceof PageId)) {
             return false;
