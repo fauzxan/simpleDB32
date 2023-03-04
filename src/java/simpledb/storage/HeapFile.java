@@ -37,7 +37,7 @@ public class HeapFile implements DbFile {
         //Lab-1 Exercise 5
         this.file = f;
         this.numPages = (int)(file.length()/BufferPool.getPageSize());
-        this.tupleDesc =td;
+        this.tupleDesc = td;
     }
 
     /**
@@ -62,7 +62,6 @@ public class HeapFile implements DbFile {
     public int getId() {
         //Lab-1 Exercise 5
         return this.file.getAbsoluteFile().hashCode();
-//    throw new UnsupportedOperationException("implement this");
     }
 
     /**

@@ -146,7 +146,6 @@ public class TupleDesc implements Serializable {
         else{
             return tdAr[i].fieldName;
         }
-
     }
 
     /**
