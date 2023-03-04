@@ -13,10 +13,10 @@ public class HeapPageId implements PageId {
      * @param tableId The table that is being referenced
      * @param pgNo The page number in that table.
      */
-    int [] data;
+    int [] data; // Array to hold TableId and PageNumber
 
     public HeapPageId(int tableId, int pgNo) {
-        // some code goes here
+        //Lab-1 Exercise 4
         data = new int[2];
         data[0] = tableId;
         data[1] = pgNo;
@@ -25,7 +25,7 @@ public class HeapPageId implements PageId {
 
     /** @return the table associated with this PageId */
     public int getTableId() {
-        // some code goes here
+        //Lab-1 Exercise 4
         return this.data[0];
     }
 
@@ -34,7 +34,7 @@ public class HeapPageId implements PageId {
      *   this PageId
      */
     public int getPageNumber() {
-        // some code goes here
+        //Lab-1 Exercise 4
         return this.data[1];
     }
 
@@ -45,9 +45,8 @@ public class HeapPageId implements PageId {
      * @see BufferPool
      */
     public int hashCode() {
-        // some code goes here
+        //Lab-1 Exercise 4
         return Arrays.hashCode(this.data);
-
     }
 
     /**
@@ -58,16 +57,15 @@ public class HeapPageId implements PageId {
      *   ids are the same)
      */
     public boolean equals(Object o) {
-        // some code goes here
-        if (!(o instanceof PageId)) {
+        //Lab-1 Exercise 4
+        if (!(o instanceof PageId)) { //Checks if the Object is of PageType
             return false;
         }
         if (o == this) {
             return true;
         }
         PageId page = (PageId) o;
-        return page.getTableId() == this.getTableId() &&
-                page.getPageNumber() == this.getPageNumber();
+        return page.getTableId() == this.getTableId() && page.getPageNumber() == this.getPageNumber();
 
     }
 
@@ -78,12 +76,8 @@ public class HeapPageId implements PageId {
      *  constructors.
      */
     public int[] serialize() {
-        int[] data = new int[2];
-
-        data[0] = getTableId();
-        data[1] = getPageNumber();
-
-        return data;
+        //Lab-1 Exercise 4
+        return data; // Data is store as an array of integers
     }
 
 }
