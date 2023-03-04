@@ -8,9 +8,7 @@ import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
-import java.lang.System.Logger;
 import java.util.*;
-import java.util.random.RandomGenerator;
 import java.util.logging.Level;
 
 
@@ -40,7 +38,7 @@ public class HeapFile implements DbFile {
         // some code goes here
         this.file = f;
         this.numPages = (int)(file.length()/BufferPool.getPageSize());
-        this.tupleDesc =td;
+        this.tupleDesc = td;
     }
 
     /**
@@ -65,7 +63,6 @@ public class HeapFile implements DbFile {
     public int getId() {
         // some code goes here
         return this.file.getAbsoluteFile().hashCode();
-//    throw new UnsupportedOperationException("implement this");
     }
 
     /**

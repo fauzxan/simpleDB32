@@ -62,6 +62,12 @@ public class Catalog {
 //            throw new NullPointerException("Empty primary key field detected!");
             System.out.println("Warning: Primary Key field is '' | Catalog.java | createTable(file, name, pkeyField)");
         }
+        for (Integer key: this.catalog.keySet()){
+            if (this.catalog.get(key).name == name){
+                this.catalog.remove(key);
+            }
+
+        }
         return new Table(file.getTupleDesc(), pkeyField, name, file);
     }
 
@@ -91,9 +97,7 @@ public class Catalog {
         if (this.catalog.containsKey(file.getId())){
             this.catalog.remove(file.getId());
         }
-
-
-        this.catalog.put(Integer.valueOf(file.getId()).hashCode(), this.createTable(file, name, pkeyField));
+        this.catalog.put(Integer.valueOf(file.getId()), this.createTable(file, name, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
@@ -119,7 +123,10 @@ public class Catalog {
         // some code goes here
 
         for (Integer key: this.catalog.keySet()){
-            if (this.catalog.get(key).name == name) return key;
+            System.out.println("Name is:"+this.catalog.get(key).name);
+            if (this.catalog.get(key).name == name) {
+                return key;
+            }
         }
 
         throw new NoSuchElementException("While looking for name within catalog, no such name was found!");
