@@ -3,7 +3,6 @@ package simpledb.storage;
 import simpledb.common.Database;
 import simpledb.common.Permissions;
 import simpledb.common.DbException;
-import simpledb.common.DeadlockException;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
@@ -42,10 +41,9 @@ public class BufferPool {
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        this.maxNumPages = numPages;
-        this.cache = new ConcurrentHashMap<PageId, Page>();
-
-        // some code goes here
+        //Lab-1 Exercise 3
+        this.maxNumPages = numPages; // Max Pages that can be cached
+        this.cache = new ConcurrentHashMap<PageId, Page>(); // Creates a new Cache
     }
 
     public static int getPageSize() {
@@ -78,19 +76,21 @@ public class BufferPool {
      * @param perm the requested permissions on the page
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm){
+        //Lab-1 Exercise 3
             if (this.cache.containsKey(pid)) {
-                return this.cache.get(pid);
+                return this.cache.get(pid); // If page already exists in cache it returns the page
             }
             else {
+                // Writes the page onto cache and returns it
                 if (this.cache.size() >=this.maxNumPages){
-                    System.out.println("Max number of pages exceeded");
+                    // Page eviction policy needs to be implemented
+                    System.out.println("Max number of pages exceeded|BufferPool.Java|getPage(TransactionId tid, PageId pid, Permissions perm)");
                 }
                 DbFile dbfile = Database.getCatalog().getDatabaseFile(pid.getTableId());
                 Page newPage = dbfile.readPage(pid);
                 this.cache.put(pid, newPage);
                 return newPage;
             }
-        // some code goes here
     }
 
     /**
