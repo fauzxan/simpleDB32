@@ -58,7 +58,7 @@ public class TupleDesc implements Serializable {
         @Override
         public TDItem next(){
             if(!hasNext()){
-                throw new NoSuchElementException();
+                throw new NoSuchElementException("hasNext threw an error | TupleDesc.java | TDIterator.next()");
             }
             return tdAr[p++];
         }
@@ -100,7 +100,7 @@ public class TupleDesc implements Serializable {
     }
     private TupleDesc(TDItem[] tdItems) {
         if (tdItems == null || tdItems.length == 0) {
-            throw new IllegalArgumentException("tdItem");
+            throw new IllegalArgumentException("tdItems parameter was null or empty | TupleDesc.java | TupleDesc(TDItem[])");
         }
         this.tdAr = tdItems;
         this.numFields = tdItems.length;
@@ -125,7 +125,7 @@ public class TupleDesc implements Serializable {
 
     public String getFieldName(int i) throws NoSuchElementException {
         if (i >= numFields || i<0) {
-            throw new NoSuchElementException("TupleDesc parameter out of bounds | getFieldType");
+            throw new NoSuchElementException("TupleDesc parameter out of bounds | TupleDesc.java | getFieldName(i)");
         }
         else{
             return tdAr[i].fieldName;
@@ -144,7 +144,7 @@ public class TupleDesc implements Serializable {
      */
     public Type getFieldType(int i) throws NoSuchElementException {
         if (i >= numFields || i<0) {
-            throw new NoSuchElementException("TupleDesc parameter out of bounds | getFieldType");
+            throw new NoSuchElementException("TupleDesc parameter out of bounds | TupleDesc.java | getFieldType(i)");
         }
         else {
             return tdAr[i].fieldType;
@@ -162,7 +162,7 @@ public class TupleDesc implements Serializable {
      */
     public int fieldNameToIndex(String name) throws NoSuchElementException {
         if(name== null){
-            throw new NoSuchElementException();
+            throw new NoSuchElementException("Name parameter was null | TupleDesc.java | fieldNameToIndex(name)");
         }
         String fieldName;
         for(int i=0; i< tdAr.length; i++){
@@ -172,7 +172,7 @@ public class TupleDesc implements Serializable {
             }
                
         }
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("fieldName not found | TupleDesc.java | fieldNameToIndex(name)");
     }
 
     /**
@@ -220,14 +220,14 @@ public class TupleDesc implements Serializable {
      */
 
     public boolean equals(Object o) {
-        // some code goes here
         return o.hashCode() == this.hashCode();
     }
 
+    /**
+     *
+     * @return hashCode() value of the string version of the TupleDesc object
+     */
     public int hashCode() {
-        // If you want to use TupleDesc as keys for HashMap, implement this so
-        // that equal objects have equals hashCode() results
-        // String versions should have the same hashcode, even if they contain null values.
         return this.toString().hashCode();
     }
 
@@ -239,7 +239,6 @@ public class TupleDesc implements Serializable {
      * @return String describing this descriptor.
      */
     public String toString() {
-        // some code goes here
         StringBuffer res = new StringBuffer();
         res.append("Fields: ");
         for (TDItem tdItem : tdAr) {

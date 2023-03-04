@@ -25,19 +25,25 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Catalog {
 
-    // Marked for review- did not find implementation of getId() anywhere else
 
 
-    /**
-     * Constructor.
-     * Creates a new, empty catalog.
-     */
+
     public ConcurrentHashMap<Integer, Table> catalog;
+
+
     public class Table{
         TupleDesc td;
         String primaryKey;
         String name;
         DbFile dbFile;
+
+        /**
+         *
+         * @param td tupleDesc object
+         * @param pk primaryKey field
+         * @param name Name of table
+         * @param dbFile dbFile that stores the tuples
+         */
         public Table(TupleDesc td, String pk, String name, DbFile dbFile){
             this.td = td;
             this.primaryKey = pk;
@@ -56,7 +62,7 @@ public class Catalog {
      */
     public Table createTable(DbFile file, String name, String pkeyField) throws NullPointerException{
         if (file == null || name == null || pkeyField == null){
-            throw new NullPointerException("Null value during the creation of Table object!");
+            throw new NullPointerException("Null value during the creation of Table object! | Catalog.java | createTable(file, name, pkeyField)");
         }
         if (pkeyField == ""){
             System.out.println("Warning: Primary Key field is '' | Catalog.java | createTable(file, name, pkeyField)");
@@ -74,7 +80,7 @@ public class Catalog {
 
 
     public Catalog() {
-        // some code goes here
+        // Lab-1 Exercise 2
         this.catalog = new ConcurrentHashMap<Integer, Table>();
     }
 
@@ -92,7 +98,7 @@ public class Catalog {
 
 
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        // Lab-1 Exercise 2
         if (this.catalog.containsKey(file.getId())){
             this.catalog.remove(file.getId());
         }
@@ -119,8 +125,7 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-
+        // Lab-1 Exercise 2
         for (Integer key: this.catalog.keySet()){
             System.out.println("Name is:"+this.catalog.get(key).name);
             if (this.catalog.get(key).name == name) {
@@ -128,7 +133,7 @@ public class Catalog {
             }
         }
 
-        throw new NoSuchElementException("While looking for name within catalog, no such name was found!");
+        throw new NoSuchElementException("While looking for name within catalog, no such name was found! | Catalog.java | getTableId(name)");
     }
 
     /**
@@ -139,7 +144,7 @@ public class Catalog {
      * This method returns the entire value present at that file ID
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
+        // Lab-1 Exercise 2
         if (!this.catalog.containsKey(tableid)){
             throw new NoSuchElementException("Couldn't find key with parameter passed | Catalog.java | getTupleDesc(tableid)");
         }
@@ -157,9 +162,9 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
+        // Lab-1 Exercise 2
         if (!this.catalog.containsKey(tableid)){
-            throw new NoSuchElementException("While looking carrying out getDatabaseFile, couldn't find key with parameter passed");
+            throw new NoSuchElementException("While looking carrying out getDatabaseFile, couldn't find key with parameter passed | Catalog.java | getDatabaseFile(tableid)");
         }
         else{
             return this.catalog.get(tableid).dbFile;
@@ -167,9 +172,9 @@ public class Catalog {
     }
 
     public String getPrimaryKey(int tableid) throws NoSuchElementException{
-        // some code goes here
+        // Lab-1 Exercise 2
         if (!this.catalog.containsKey(tableid)){
-            throw new NoSuchElementException("While looking carrying out getPrimaryKey, couldn't find key with parameter passed");
+            throw new NoSuchElementException("While looking carrying out getPrimaryKey, couldn't find key with parameter passed | Catalog.java | getPrimaryKey(tableid)");
         }
         else{
             return this.catalog.get(tableid).primaryKey;
@@ -177,24 +182,24 @@ public class Catalog {
     }
 
     public Iterator<Integer> tableIdIterator(){
-        // some code goes here
+        // Lab-1 Exercise 2
             return this.catalog.keySet().iterator();
 
     }
 
     public String getTableName(int id) throws NoSuchElementException{
-        // some code goes here
+        // Lab-1 Exercise 2
         if (this.catalog.containsKey(id)){
             return this.catalog.get(id).name;
         }
         else{
-            throw new NoSuchElementException("While looking carrying out getTableName, couldn't find key with parameter passed");
+            throw new NoSuchElementException("While looking carrying out getTableName, couldn't find key with parameter passed | Catalog.java | getTableName(id)");
         }
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
-        // some code goes here
+        // Lab-1 Exercise 2
         for (Integer key: this.catalog.keySet()){
             this.catalog.remove(key);
         }
@@ -211,9 +216,7 @@ public class Catalog {
             BufferedReader br = new BufferedReader(new FileReader(catalogFile));
             
             while ((line = br.readLine()) != null) {
-                //assume line is of the format name (field type, field type, ...)
                 String name = line.substring(0, line.indexOf("(")).trim();
-                //System.out.println("TABLE NAME: " + name);
                 String fields = line.substring(line.indexOf("(") + 1, line.indexOf(")")).trim();
                 String[] els = fields.split(",");
                 ArrayList<String> names = new ArrayList<>();
@@ -250,7 +253,7 @@ public class Catalog {
             e.printStackTrace();
             System.exit(0);
         } catch (IndexOutOfBoundsException e) {
-            System.out.println ("Invalid catalog entry : " + line);
+            System.out.println ("Invalid catalog entry | Catalog.java | loadSchema(catalogFile) : " + line);
             System.exit(0);
         }
     }

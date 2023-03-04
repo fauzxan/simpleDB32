@@ -42,7 +42,7 @@ public class SeqScan implements OpIterator {
      *            tableAlias.null, or null.null).
      */
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
-        // some code goes here
+        // Lab-1 Exercise 6
         this.tid = tid;
         this.tableid = tableid;
         this.tableAlias = tableAlias;
@@ -55,14 +55,13 @@ public class SeqScan implements OpIterator {
      *       be the actual name of the table in the catalog of the database
      * */
     public String getTableName() throws NoSuchElementException{
-	// some code goes here
-        // Is the table id the same as the file id?
+        // Lab-1 Exercise 6
         String name = Database.getCatalog().getTableName(this.tableid);
         if (name != null) {
             return name;
         }
         else{
-            throw new NoSuchElementException("No such table name while seqScanning");
+            throw new NoSuchElementException("No such table name | SeqScan.java | getTableName()");
         }
     }
 
@@ -71,13 +70,13 @@ public class SeqScan implements OpIterator {
      * */
     public String getAlias()
     {
-        // some code goes here
+        // Lab-1 Exercise 6
         String alias = this.tableAlias;
         if (alias != null){
             return alias;
         }
         else{
-            throw new NoSuchElementException("Table Alias not created properly while seqScanning");
+            throw new NoSuchElementException("Table Alias not created properly while seqScanning | SeqScan.java | getAlias()");
         }
     }
 
@@ -94,7 +93,7 @@ public class SeqScan implements OpIterator {
      *            tableAlias.null, or null.null).
      */
     public void reset(int tableid, String tableAlias) {
-        // some code goes here
+        // Lab-1 Exercise 6
         this.tableid = tableid;
         this.tableAlias = tableAlias;
     }
@@ -104,9 +103,8 @@ public class SeqScan implements OpIterator {
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // some code goes here
+        // Lab-1 Exercise 6
         this.iterator.open();
-
     }
 
     /**
@@ -124,7 +122,7 @@ public class SeqScan implements OpIterator {
      * but was: <Fields: table_alias.test0(INT_TYPE), table_alias.test1(INT_TYPE), 2 Fields in total>
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
+        // Lab-1 Exercise 6
         TupleDesc td = Database.getCatalog().getTupleDesc(this.tableid);
         Type[] typeArr = new Type[td.numFields()];
         String[] fieldArr = new String[td.numFields()];
@@ -136,32 +134,31 @@ public class SeqScan implements OpIterator {
             return new TupleDesc(typeArr, fieldArr);
         }
         else{
-            throw new NoSuchElementException("Could not get tuple desc while seqScanning, or it is empty");
+            throw new NoSuchElementException("Could not get tuple desc while seqScanning, or it is empty | SeqScan.java | getTupleDesc()");
         }
     }
 
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
-        // some code goes here
+        // Lab-1 Exercise 6
         return this.iterator.hasNext();
 
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        // some code goes here
+        // Lab-1 Exercise 6
         return this.iterator.next();
     }
 
     public void close() {
-        // some code goes here
-            this.iterator.close();
-
+        // Lab-1 Exercise 6
+        this.iterator.close();
     }
 
     public void rewind() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // some code goes here
+        // Lab-1 Exercise 6
         try{
             this.iterator.rewind();
         }

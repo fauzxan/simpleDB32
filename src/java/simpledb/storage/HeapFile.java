@@ -72,10 +72,8 @@ public class HeapFile implements DbFile {
     public TupleDesc getTupleDesc() {
         //Lab-1 Exercise 5
         return this.tupleDesc;
-//        throw new UnsupportedOperationException("implement this");
     }
 
-    // see DbFile.java for javadocs
     public Page readPage(PageId pid) throws IllegalArgumentException {
         //Lab-1 Exercise 5
         HeapPage page = null;
@@ -88,7 +86,7 @@ public class HeapFile implements DbFile {
             long file_size = raf.length();
             if (offset>file_size)
             {
-                throw new IllegalArgumentException("The PageID is invalid|HeapFile.Java|readPage(PageId)");
+                throw new IllegalArgumentException("The PageID is invalid | HeapFile.Java | readPage(PageId)");
             }
             raf.seek(offset);
             raf.read(byte_file, 0, byte_file.length);

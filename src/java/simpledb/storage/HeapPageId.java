@@ -20,7 +20,6 @@ public class HeapPageId implements PageId {
         data = new int[2];
         data[0] = tableId;
         data[1] = pgNo;
-
         }
 
     /** @return the table associated with this PageId */
@@ -74,10 +73,12 @@ public class HeapPageId implements PageId {
      *  integers, for writing to disk.  Size of returned array must contain
      *  number of integers that corresponds to number of args to one of the
      *  constructors.
+     *
+     *  Data is stored as an array of integers
      */
     public int[] serialize() {
         //Lab-1 Exercise 4
-        return data; // Data is store as an array of integers
+        return data;
     }
 
 }
