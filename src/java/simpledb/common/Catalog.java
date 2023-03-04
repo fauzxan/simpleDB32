@@ -59,14 +59,13 @@ public class Catalog {
             throw new NullPointerException("Null value during the creation of Table object!");
         }
         if (pkeyField == ""){
-//            throw new NullPointerException("Empty primary key field detected!");
             System.out.println("Warning: Primary Key field is '' | Catalog.java | createTable(file, name, pkeyField)");
         }
+
         for (Integer key: this.catalog.keySet()){
             if (this.catalog.get(key).name == name){
                 this.catalog.remove(key);
             }
-
         }
         return new Table(file.getTupleDesc(), pkeyField, name, file);
     }
@@ -149,10 +148,6 @@ public class Catalog {
         }
 
     }
-    /**
-     * Expected: simpledb.storage.TupleDesc<Fields: null(INT_TYPE), null(INT_TYPE), 2 Fields in total>
-     * Result:   simpledb.storage.TupleDesc<Fields: null(INT_TYPE), null(INT_TYPE), 2 Fields in total>
-     */
 
 
     /**
