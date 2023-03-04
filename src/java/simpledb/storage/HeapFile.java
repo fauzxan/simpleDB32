@@ -2,16 +2,13 @@ package simpledb.storage;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.common.Debug;
 import simpledb.common.Permissions;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
-import java.lang.System.Logger;
 import java.util.*;
-import java.util.random.RandomGenerator;
-import java.util.logging.Level;
+
 
 
 /**
@@ -37,7 +34,7 @@ public class HeapFile implements DbFile {
      *            file.
      */
     public HeapFile(File f, TupleDesc td) {
-        // some code goes here
+        //Lab-1 Exercise 5
         this.file = f;
         this.numPages = (int)(file.length()/BufferPool.getPageSize());
         this.tupleDesc =td;
@@ -49,7 +46,7 @@ public class HeapFile implements DbFile {
      * @return the File backing this HeapFile on disk.
      */
     public File getFile() {
-        // some code goes here
+        //Lab-1 Exercise 5
         return this.file;
     }
 
@@ -63,7 +60,7 @@ public class HeapFile implements DbFile {
      * @return an ID uniquely identifying this HeapFile.
      */
     public int getId() {
-        // some code goes here
+        //Lab-1 Exercise 5
         return this.file.getAbsoluteFile().hashCode();
 //    throw new UnsupportedOperationException("implement this");
     }
@@ -74,14 +71,14 @@ public class HeapFile implements DbFile {
      * @return TupleDesc of this DbFile.
      */
     public TupleDesc getTupleDesc() {
-        // some code goes here
+        //Lab-1 Exercise 5
         return this.tupleDesc;
 //        throw new UnsupportedOperationException("implement this");
     }
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) throws IllegalArgumentException {
-        // some code goes here
+        //Lab-1 Exercise 5
         HeapPage page = null;
 
         int pgNo = pid.getPageNumber();
@@ -115,7 +112,7 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        // some code goes here
+        //Lab-1 Exercise 5
         return this.numPages;
     }
 
@@ -134,6 +131,11 @@ public class HeapFile implements DbFile {
         return null;
         // not necessary for lab1
     }
+
+    /**
+ * HeapFileIterator is an implementation of a DbFileIterator that allows you to
+ * iterate through the tuples of each page in the HeapFile.
+ */
     public class HeapFileIterator implements DbFileIterator
 
     {
@@ -144,21 +146,28 @@ public class HeapFile implements DbFile {
         Boolean isOpen = false;
         private int pgNo;
 
-
+    /**
+     * Constructs a heap file iterator
+     *
+     * @param tid
+     *            the trasnsaction id
+     * @param file
+     *            the heap file to iterate over
+     */
         public HeapFileIterator(TransactionId tid, HeapFile file)
         {
             this.tid = tid;
             this.file = file;
-            this.pgNo = 0;
+            this.pgNo = 0; // Intialize page number to 0, to iterate from the beginning of the file.
 
         }
 
         @Override
         public void open() throws DbException, TransactionAbortedException
         {
-            HeapPageId pageId= new HeapPageId(this.file.getId(),this.pgNo);
-            HeapPage page = (HeapPage) Database.getBufferPool().getPage(this.tid,pageId, Permissions.READ_ONLY);
-            this.tup_iter = page.iterator();
+            HeapPageId pageId= new HeapPageId(this.file.getId(),this.pgNo); // Generates the HeapPageId of the first page in the file
+            HeapPage page = (HeapPage) Database.getBufferPool().getPage(this.tid,pageId, Permissions.READ_ONLY);// Initialises the first page in the HeapPage
+            this.tup_iter = page.iterator(); //Initialises the tuple iterator of the first page
             this.isOpen = true;
         }
         @Override
@@ -174,27 +183,27 @@ public class HeapFile implements DbFile {
             }
             if (tup_iter == null)
             {
-                return false;
+                return false; //If there is no tuple iterator return false
             }
-            if (!this.tup_iter.hasNext())
+            if (!this.tup_iter.hasNext()) //If tuple iterator.hasNext for a page is false, i.e you have reached the end of the page
             {
-                this.pgNo += 1;
+                this.pgNo += 1; // Increment the page number by 1
                 if (this.pgNo >= this.file.numPages())
                 {
-                    return false;
+                    return false; //If the current page number is greater than the total number of pages in the file return false
                 }
                 HeapPageId pageId= new HeapPageId(this.file.getId(),this.pgNo);
-                HeapPage page = (HeapPage) Database.getBufferPool().getPage(this.tid,pageId, Permissions.READ_ONLY);
-                this.tup_iter = page.iterator();
+                HeapPage page = (HeapPage) Database.getBufferPool().getPage(this.tid,pageId, Permissions.READ_ONLY); //Initialise the heap page for the new page
+                this.tup_iter = page.iterator(); //Initialise the iterator for the new page
             }
-            return true;
+            return true; // Returns true if number of pages <= total number of pages in the file and if there are more tuples in the given page.
         }
 
             @Override
             public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
                 try{
                     if (this.hasNext()){
-                        return this.tup_iter.next();
+                        return this.tup_iter.next(); //return the next tuple given that it exists
                     }
                 }
                 catch(Exception e){
@@ -205,8 +214,8 @@ public class HeapFile implements DbFile {
 
             @Override
             public void rewind() throws DbException, TransactionAbortedException {
-                this.close();
-                this.open();
+                this.close(); //Resets all the class attributes
+                this.open();  //Re-initialises the class attributes
             }
 
         }
@@ -219,8 +228,9 @@ public class HeapFile implements DbFile {
      * @return an iterator over all the tuples stored in this DbFile.
      */
     public DbFileIterator iterator(TransactionId tid) {
+        //Lab-1 Exercise 5
         HeapFileIterator file_iter = new HeapFileIterator(tid,this);
-        return file_iter;
+        return file_iter; // Returns a new heap file iterator
     }
 
 }
