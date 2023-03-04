@@ -141,7 +141,7 @@ public class HeapFile implements DbFile {
         private TransactionId tid;
         private HeapFile file;
         private Iterator<Tuple> tup_iter;
-        Boolean isOpen;
+        Boolean isOpen = false;
         private int pgNo;
 
 
