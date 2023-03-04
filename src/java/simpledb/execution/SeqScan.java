@@ -117,10 +117,6 @@ public class SeqScan implements OpIterator {
      * @return the TupleDesc with field names from the underlying HeapFile,
      *         prefixed with the tableAlias string from the constructor.
      */
-    /**
-     * expected:<Fields: test0(INT_TYPE), test1(INT_TYPE), 2 Fields in total>
-     * but was: <Fields: table_alias.test0(INT_TYPE), table_alias.test1(INT_TYPE), 2 Fields in total>
-     */
     public TupleDesc getTupleDesc() {
         // Lab-1 Exercise 6
         TupleDesc td = Database.getCatalog().getTupleDesc(this.tableid);

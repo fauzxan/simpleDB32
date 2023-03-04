@@ -24,6 +24,7 @@ public class RecordId implements Serializable {
      *            the tuple number within the page.
      */
     public RecordId(PageId pid, int tupleno) {
+        // Lab-1 Exercise 4
         this.pid = pid;
         this.tupleno = tupleno;
     }
@@ -32,6 +33,7 @@ public class RecordId implements Serializable {
      * @return the tuple number this RecordId references.
      */
     public int getTupleNumber() throws NoSuchElementException{
+        // Lab-1 Exercise 4
         if (this.tupleno != null) {
             return this.tupleno;
         }
@@ -42,7 +44,8 @@ public class RecordId implements Serializable {
      * @return the page id this RecordId references.
      */
     public PageId getPageId(){
-            return this.pid;
+        // Lab-1 Exercise 4
+        return this.pid;
     }
 
     /**
@@ -53,6 +56,7 @@ public class RecordId implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
+        // Lab-1 Exercise 4
         return this.hashCode() == o.hashCode();
     }
 
@@ -64,6 +68,7 @@ public class RecordId implements Serializable {
      */
     @Override
     public int hashCode() {
+        // Lab-1 Exercise 4
         String hashitem = this.tupleno.toString() + "," + this.pid.toString();
         return hashitem.hashCode();
     }
