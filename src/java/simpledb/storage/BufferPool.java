@@ -154,7 +154,12 @@ public class BufferPool {
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for lab1
+        // not necessary for 
+        HeapFile table = (HeapFile) Database.getCatalog().getDbFile(tableId);
+        ArrayList<Page> impactedPages = table.insertTuple(tid, t);
+        for (Page page : impactedPages){
+            page.markDirty(true, tid);
+        }
     }
 
     /**
@@ -174,6 +179,10 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        int tableId = t.getRecordId().getPageId().getTableId();
+        HeapFile table = (HeapFile) Database.getCatalog().getDbFile(tableId);
+        Page impactedPage = table.deleteTuple(tid, t);
+        impactedPage.markDirty(true, tid);
     }
 
     /**
@@ -184,6 +193,10 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
+        Iterator<Page> it = lruPagesPool.iterator();
+        while(it.hasNext()){
+            flushPage(it.next());
+        }
 
     }
 
@@ -198,6 +211,7 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+        this.cache.remove(pid);
     }
 
     /**
@@ -207,6 +221,11 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+        Page page = this.cache.get(pid);
+        int tableId = ((HeapPageId)pid).getTableId();
+        HeapFile hpf = (HeapFile)Database.getCatalog().getDbFile(tableId);
+        hpf..writePage(page);
+        page.markDirty(false, null);
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -223,6 +242,7 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+        
     }
 
 }
