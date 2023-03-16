@@ -32,23 +32,43 @@ public class Insert extends Operator {
     public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
         // some code goes here
+        this.tid = t;
+        this.tableId = tableId;
+        this.child = child;
+        count = 0;
+        td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{null});
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return td;
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        hasEntered = false;
+        child.open();
+        super.open();
+        while(child.hasNext()){
+            Tuple next = child.next();
+            try{
+                Database.getBufferPool().insertTuple(tid, tableId, next);
+                count ++;
+            } catch (IOException e){
+                e.printStackTrace();
+            }
+        }
     }
 
     public void close() {
         // some code goes here
+        super.close();
+        child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+        hasEntered = false;
     }
 
     /**
@@ -66,17 +86,24 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        if (hasEntered) {
+            return null;
+        }
+        hasEntered = true;
+        Tuple inserted_num=new Tuple(getTupleDesc());
+        inserted_num.setField(0,new IntField(count));
+        return inserted_num;
     }
 
     @Override
     public OpIterator[] getChildren() {
         // some code goes here
-        return null;
+        return new OpIterator[]{child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
         // some code goes here
+        child = children[0];
     }
 }
