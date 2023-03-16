@@ -108,8 +108,12 @@ java.util.NoSuchElementException
 org.junit.Assert
 simpledb.execution.Predicate$Op
 ||:simpledb.execution.Predicate
+simpledb.storage.Tuple
+java.lang.StringBuilder
 java.lang.Object
+simpledb.storage.Field
 simpledb.execution.Predicate$Op
+java.lang.Integer
 simpledb.execution.Predicate
 java.io.Serializable
 ||:simpledb.ParsingException
