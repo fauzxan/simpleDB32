@@ -16,6 +16,19 @@ public class Insert extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private OpIterator child;
+
+    private int count;
+
+    private TupleDesc td;
+
+    private boolean hasEntered;
+
+    private TransactionId tid;
+
+    private int tableId;
+
+
     /**
      * Constructor.
      *

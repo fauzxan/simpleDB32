@@ -20,6 +20,16 @@ public class Delete extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private TransactionId tid;
+
+    private OpIterator child;
+
+    private TupleDesc td;
+
+    private boolean hasEntered;
+
+    private int count;
+
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -82,7 +92,7 @@ public class Delete extends Operator {
         hasEntered = true;
         Tuple deleted_num=new Tuple(getTupleDesc());
         deleted_num.setField(0,new IntField(count));
-        return deleted_num;
+        return deleted_num; 
     }
 
     @Override
