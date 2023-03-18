@@ -182,8 +182,8 @@ public class BufferPool {
         // not necessary for lab1
         int tableId = t.getRecordId().getPageId().getTableId();
         HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        Page impactedPage = table.deleteTuple(tid, t);
-        impactedPage.markDirty(true, tid);
+        Page affectedPage = table.deleteTuple(tid, t);
+        affectedPage.markDirty(true, tid);
     }
 
     /**
@@ -194,10 +194,10 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
-        Iterator<Page> it = lruPagesPool.iterator();
-        while(it.hasNext()){
-            flushPage(it.next());
+        for(PageId key : this.cache.keySet()){
+            flushPage(key);
         }
+
 
     }
 
@@ -209,7 +209,7 @@ public class BufferPool {
         Also used by B+ tree files to ensure that deleted pages
         are removed from the cache so they can be reused safely
     */
-    public synchronized void discardPage(PageId pid) {
+    public synchronized void discardPage(PageId pid) {fxaxhe
         // some code goes here
         // not necessary for lab1
         this.cache.remove(pid);
@@ -243,6 +243,7 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+        
         
     }
 

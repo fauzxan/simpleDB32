@@ -44,7 +44,12 @@ public class Delete extends Operator {
         tid = t;
         this.child = child;
         count = 0;
-        td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{null});
+        Type[] typeAr = new Type[1];
+        typeAr[0] = Type.INT_TYPE;
+        String[] stringAr = new String[1];
+        stringAr[0] = "number of deleted records";
+        td = new TupleDesc(typeAr, stringAr);
+        //td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{null});
     }
 
     public TupleDesc getTupleDesc() {

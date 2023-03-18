@@ -7,6 +7,7 @@ import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+import java.io.IOException;
 
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
@@ -49,7 +50,12 @@ public class Insert extends Operator {
         this.tableId = tableId;
         this.child = child;
         count = 0;
-        td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{null});
+        Type[] typeAr = new Type[1];
+        typeAr[0] = Type.INT_TYPE;
+        String[] stringAr = new String[1];
+        stringAr[0] = "number of inserted records";
+        td = new TupleDesc(typeAr, stringAr);
+        //td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{null});
     }
 
     public TupleDesc getTupleDesc() {
@@ -104,7 +110,7 @@ public class Insert extends Operator {
         }
         hasEntered = true;
         Tuple inserted_num=new Tuple(getTupleDesc());
-        inserted_num.setField(0,new IntField(count));
+        inserted_num.setField(0,count);
         return inserted_num;
     }
 
