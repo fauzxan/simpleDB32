@@ -7,8 +7,9 @@ import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
 import java.io.*;
-
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -155,7 +156,7 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for 
-        HeapFile table = (HeapFile) Database.getCatalog().getDbFile(tableId);
+        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
         ArrayList<Page> impactedPages = table.insertTuple(tid, t);
         for (Page page : impactedPages){
             page.markDirty(true, tid);
@@ -180,7 +181,7 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
         int tableId = t.getRecordId().getPageId().getTableId();
-        HeapFile table = (HeapFile) Database.getCatalog().getDbFile(tableId);
+        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
         Page impactedPage = table.deleteTuple(tid, t);
         impactedPage.markDirty(true, tid);
     }
@@ -223,8 +224,8 @@ public class BufferPool {
         // not necessary for lab1
         Page page = this.cache.get(pid);
         int tableId = ((HeapPageId)pid).getTableId();
-        HeapFile hpf = (HeapFile)Database.getCatalog().getDbFile(tableId);
-        hpf..writePage(page);
+        HeapFile hpf = (HeapFile)Database.getCatalog().getDatabaseFile(tableId);
+        hpf.writePage(page);
         page.markDirty(false, null);
     }
 
