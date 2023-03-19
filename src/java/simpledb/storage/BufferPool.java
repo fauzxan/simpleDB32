@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
+import java.io.IOException;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -156,10 +157,8 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for 
-        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        ArrayList<Page> impactedPages = table.insertTuple(tid, t);
-        for (Page page : impactedPages){
-            page.markDirty(true, tid);
+        DbFile f = Database.getCatalog().getDatabaseFile(tableId);
+        updateBufferPool(f.insertTuple(tid,t),tid);
         }
     }
 
@@ -180,12 +179,19 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
-        int tableId = t.getRecordId().getPageId().getTableId();
-        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        Page affectedPage = table.deleteTuple(tid, t);
-        affectedPage.markDirty(true, tid);
+        DbFile f = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+        updateBufferPool(f.deleteTuple(tid,t),tid);
+    
     }
 
+    private void updateBufferPool(ArrayList<Page> pagelist, TransactionId tid) throws DbException{
+        for(Page p: pagelist){
+            if(this.cache.size()>numPages){
+                evictPage();
+            }
+            this.cache.put(p.getId(),p);
+        }
+    }
     /**
      * Flush all dirty pages to disk.
      * NB: Be careful using this routine -- it writes dirty data to disk so will
@@ -194,8 +200,8 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
-        for(PageId key : this.cache.keySet()){
-            flushPage(key);
+        for(Page p : this.cache.values()){
+            flushPage(p.getId());
         }
 
 
@@ -243,8 +249,13 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
-        
-        
+        PageId pid = new ArrayList<>(this.cache.keySet()).get(0);
+        try{
+            flushPage(pid);
+        }catch(IOException e){
+            e.printStackTrace();
+        }
+        discardPage(pid);
     }
 
 }
