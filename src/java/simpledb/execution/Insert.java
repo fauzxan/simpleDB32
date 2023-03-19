@@ -52,7 +52,7 @@ public class Insert extends Operator {
         this.tid = t;
         this.tableId = tableId;
         this.child = child;
-        count = 0;
+        this.count = -1;
         Type[] typeAr = new Type[1];
         typeAr[0] = Type.INT_TYPE;
         String[] stringAr = new String[1];
@@ -63,19 +63,20 @@ public class Insert extends Operator {
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return td;
+        return this.td;
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
         hasEntered = false;
-        child.open();
+        this.count =0;
+        this.child.open();
         super.open();
-        while(child.hasNext()){
-            Tuple next = child.next();
+        while(this.child.hasNext()){
+            Tuple next = this.child.next();
             try{
                 Database.getBufferPool().insertTuple(tid, tableId, next);
-                count ++;
+                this.count ++;
             } catch (IOException e){
                 e.printStackTrace();
             }
@@ -85,11 +86,14 @@ public class Insert extends Operator {
     public void close() {
         // some code goes here
         super.close();
-        child.close();
+        this.count = -1;
+        this.child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+        this.child.rewind();
+        this.count = 0;
         hasEntered = false;
     }
 
@@ -113,19 +117,19 @@ public class Insert extends Operator {
         }
         hasEntered = true;
         Tuple inserted_num=new Tuple(getTupleDesc());
-        inserted_num.setField(0,new IntField(count));
+        inserted_num.setField(0,new IntField(this.count));
         return inserted_num;
     }
 
     @Override
     public OpIterator[] getChildren() {
         // some code goes here
-        return new OpIterator[]{child};
+        return new OpIterator[]{this.child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
         // some code goes here
-        child = children[0];
+        this.child = children[0];
     }
 }

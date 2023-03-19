@@ -41,9 +41,9 @@ public class Delete extends Operator {
      */
     public Delete(TransactionId t, OpIterator child) {
         // some code goes here
-        tid = t;
+        this.tid = t;
         this.child = child;
-        count = 0;
+        this.count = -1;
         Type[] typeAr = new Type[1];
         typeAr[0] = Type.INT_TYPE;
         String[] stringAr = new String[1];
@@ -54,13 +54,14 @@ public class Delete extends Operator {
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return td;
+        return this.td;
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
-        child.open();
+        this.child.open();
         super.open();
+        this.count =0;
         hasEntered = false;
         while (child.hasNext()) {
             Tuple next = child.next();
@@ -72,12 +73,15 @@ public class Delete extends Operator {
     public void close() {
         // some code goes here
         super.close();
+        this.count = -1;
         child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
         hasEntered = false;
+        this.child.rewind();
+        this.count = 0;
     }
 
     /**
@@ -96,20 +100,20 @@ public class Delete extends Operator {
         }
         hasEntered = true;
         Tuple deleted_num=new Tuple(getTupleDesc());
-        deleted_num.setField(0,new IntField(count));
+        deleted_num.setField(0,new IntField(this.count));
         return deleted_num; 
     }
 
     @Override
     public OpIterator[] getChildren() {
         // some code goes here
-        return new OpIterator[]{child};
+        return new OpIterator[]{this.child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
         // some code goes here
-        child = children[0];
+        this.child = children[0];
     }
 
 }
