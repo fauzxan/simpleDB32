@@ -116,17 +116,54 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
+        //Lab-2 Exercise 3
         // some code goes here
-        return null;
         // not necessary for lab1
+        HeapPage page = null;
+        HeapPageId pid;
+
+        int pg=0;
+        while(pg<numPages()){
+            pid = new HeapPageId(getId(), pg);
+            page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+            if(page.getNumEmptySlots()>0) {
+                try {
+                    page.insertTuple(t);
+                    page.markDirty(true, tid);
+                    }
+                catch (DbException e)
+                    {
+                        e.printStackTrace();
+                    }
+                break;
+            }
+            pg += 1;
+        }
+
+        //If pages are full.
+        if(pg==numPages()) {
+            pid = new HeapPageId(getId(), pg);
+            page = new HeapPage(pid, HeapPage.createEmptyPageData());
+            page.insertTuple(t);
+            page.markDirty(true, tid);
+            writePage(page);
+        }
+        ArrayList<Page> pages = new ArrayList<>();
+        pages.add(page);
+        return pages;
     }
 
     // see DbFile.java for javadocs
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
-        // some code goes here
-        return null;
-        // not necessary for lab1
+        PageId pid = t.getRecordId().getPageId();
+        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+        if (page==null)
+            throw new DbException("Not a valid tuple| HeapFile.Java | deleteTuple(TransactionId tid, Tuple t)");
+        page.deleteTuple(t);
+        ArrayList<Page> pages = new ArrayList<>();
+        pages.add(page);
+        return pages;
     }
 
     /**

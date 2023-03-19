@@ -10,7 +10,7 @@ import java.util.*;
 import java.io.*;
 
 /**
- * Each instance of HeapPage stores data for one page of HeapFiles and 
+ * Each instance of HeapPage stores data for one page of HeapFiles and
  * implements the Page interface that is used by BufferPool.
  *
  * @see HeapFile
@@ -27,6 +27,9 @@ public class HeapPage implements Page {
 
     byte[] oldData;
     private final Byte oldDataLock= (byte) 0;
+
+    boolean dirty;
+    TransactionId dirtiedbytid;
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -54,7 +57,7 @@ public class HeapPage implements Page {
         header = new byte[getHeaderSize()];
         for (int i=0; i<header.length; i++)
             header[i] = dis.readByte();
-        
+
         tuples = new Tuple[numSlots];
         try{
             // allocate and read the actual records of this page
@@ -71,7 +74,7 @@ public class HeapPage implements Page {
     /** Retrieve the number of tuples on this page.
         @return the number of tuples on this page
     */
-    private int getNumTuples() {        
+    private int getNumTuples() {
         // some code goes here
         if(numSlots != 0){
             return numSlots;
@@ -85,14 +88,14 @@ public class HeapPage implements Page {
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
-    private int getHeaderSize() {        
-        
+    private int getHeaderSize() {
+
         // some code goes here
         int  headerSize = (int)Math.ceil(getNumTuples()/8.0);
         return headerSize;
-                 
+
     }
-    
+
     /** Return a view of this page before it was modified
         -- used by recovery */
     public HeapPage getBeforeImage(){
@@ -110,7 +113,7 @@ public class HeapPage implements Page {
         }
         return null;
     }
-    
+
     public void setBeforeImage() {
         synchronized(oldDataLock)
         {
@@ -207,7 +210,7 @@ public class HeapPage implements Page {
                 Field f = tuples[i].getField(j);
                 try {
                     f.serialize(dos);
-                
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -239,7 +242,7 @@ public class HeapPage implements Page {
      * this method to the HeapPage constructor will create a HeapPage with
      * no valid tuples in it.
      *
-     * @return The returned ByteArray.
+     * @return The returned ByteArray
      */
     public static byte[] createEmptyPageData() {
         int len = BufferPool.getPageSize();
@@ -254,8 +257,16 @@ public class HeapPage implements Page {
      * @param t The tuple to delete
      */
     public void deleteTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        final RecordId recordId = t.getRecordId();
+        if(pid !=  recordId.getPageId() || recordId.getTupleNumber() >= numSlots){
+            throw new DbException("The tuple is not on this page | HeapPage.java | deleteTuple(Tuple t)");
+        }
+        if(!isSlotUsed(recordId.getTupleNumber())){
+            throw new DbException("The tuple slot is already used| HeapPage.java | deleteTuple(Tuple t)");
+        }
+        int tupNum = recordId.getTupleNumber();
+        markSlotUsed(recordId.getTupleNumber(), false);
+        tuples[tupNum]=null;
     }
 
     /**
@@ -266,8 +277,16 @@ public class HeapPage implements Page {
      * @param t The tuple to add.
      */
     public void insertTuple(Tuple t) throws DbException {
-        // some code goes here
-        // not necessary for lab1
+        if (!td.equals(t.getTupleDesc())) throw new DbException("TupleDesc is mismatch | HeapPage.java | insertTuple(Tuple t)");
+        for(int i=0;i<this.numSlots;i++) {
+            if (!isSlotUsed(i)) {
+                tuples[i] = t;
+                t.setRecordId(new RecordId(pid, i));
+                markSlotUsed(i,true);
+                return;
+            }
+        }
+        throw new DbException("The page is full (no empty slots)| HeapPage.java | insertTuple(Tuple t)");
     }
 
     /**
@@ -276,7 +295,8 @@ public class HeapPage implements Page {
      */
     public void markDirty(boolean dirty, TransactionId tid) {
         // some code goes here
-	// not necessary for lab1
+        this.dirty = dirty;
+        this.dirtiedbytid = tid;
     }
 
     /**
@@ -284,8 +304,9 @@ public class HeapPage implements Page {
      */
     public TransactionId isDirty() {
         // some code goes here
-	// Not necessary for lab1
-        return null;      
+        if(dirty)
+            return dirtiedbytid;
+        return null;
     }
 
     /**
@@ -318,7 +339,20 @@ public class HeapPage implements Page {
      */
     private void markSlotUsed(int i, boolean value) {
         // some code goes here
-        // not necessary for lab1
+        int byteNum = Math.floorDiv(i, 8);
+        int bytePos = i % 8;
+        if (bytePos < 0 || bytePos > 7) {
+            throw new IllegalArgumentException();
+        }
+        if (value)
+        {
+             header[(int)byteNum] |= (1<<bytePos); //Move the bit 1 to the specified position, for example, if pos is 3 and value is true, you will get 00001000
+        //If the value is 1, use the byte 00001000 and "|" operation to change the specified position to 1, and keep other positions unchanged
+        }
+        else
+        {
+            header[(int)byteNum] &= ~(1<<bytePos);//If the value is 0, use the byte 11110111 and the "&" operation to change the specified position to 0, and the other positions remain unchanged
+        }
     }
 
     /**
