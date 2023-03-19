@@ -70,14 +70,17 @@ public class Filter extends Operator {
      */
     protected Tuple fetchNext() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        if (!child.hasNext()) return null;
-        Tuple t = child.next();
-        if (p.filter(t) == true)
-        {
-            return t;
+        if(!child.hasNext())
+            return null;
+        Tuple currTuple = child.next();
+        while(!p.filter(currTuple)) {
+            if(!child.hasNext())
+                return null;
+            currTuple = child.next();
         }
-        else return null;
-    }
+        return currTuple;
+        }
+
 
     @Override
     public OpIterator[] getChildren() {

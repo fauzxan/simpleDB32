@@ -75,12 +75,14 @@ public class Join extends Operator {
     }
 
     public void close() {
+        this.child1_tuple = null;
         this.child1.close();
         this.child2.close();
         super.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
+        this.child1_tuple = null;
         this.child1.rewind();
         this.child2.rewind();
     }
