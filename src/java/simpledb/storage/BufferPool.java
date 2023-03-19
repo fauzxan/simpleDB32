@@ -8,9 +8,9 @@ import simpledb.transaction.TransactionId;
 
 import java.io.*;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
-import java.util.List;
 import java.io.IOException;
 
 /**
@@ -157,13 +157,23 @@ public class BufferPool {
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for 
-        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        List<Page> affectedPages = table.insertTuple(tid, t);
-        for (Page page : affectedPages) {
+        // not necessary for
+        HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
+        List<Page> modpages = file.insertTuple(tid, t);
+
+        for (Page page: modpages) {
             page.markDirty(true, tid);
+
+            if (cache.size() > this.maxNumPages) {
+                evictPage();
+            }
+
+            cache.put(page.getId(), page);
         }
+
+
     }
+
 
 
     /**
@@ -183,13 +193,21 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        try {
         int tableId=t.getRecordId().getPageId().getTableId();
         HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
         ArrayList<Page> affectedPage = table.deleteTuple(tid, t);
         for (Page page : affectedPage) {
             page.markDirty(true, tid);
+            if (cache.size() > this.maxNumPages) {
+                evictPage();
+            }
+            cache.put(page.getId(), page);
         }
-    
+    } catch(NullPointerException e){
+        throw new DbException("Tuple not in any table | BufferPool.Java | deleteTuple(TransactionId tid, Tuple t) ");
+    }
+
     }
     /**
      * Flush all dirty pages to disk.
