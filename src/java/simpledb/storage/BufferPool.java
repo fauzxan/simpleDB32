@@ -8,9 +8,9 @@ import simpledb.transaction.TransactionId;
 
 import java.io.*;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
-import java.util.List;
 import java.io.IOException;
 
 /**
@@ -31,8 +31,8 @@ public class BufferPool {
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
     /** Default number of pages passed to the constructor. This is used by
-    other classes. BufferPool should use the numPages argument to the
-    constructor instead. */
+     other classes. BufferPool should use the numPages argument to the
+     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
     private ConcurrentHashMap<PageId, Page> cache;
     private int maxNumPages;
@@ -50,17 +50,17 @@ public class BufferPool {
     }
 
     public static int getPageSize() {
-      return pageSize;
+        return pageSize;
     }
 
     // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
     public static void setPageSize(int pageSize) {
-    	BufferPool.pageSize = pageSize;
+        BufferPool.pageSize = pageSize;
     }
 
     // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
     public static void resetPageSize() {
-    	BufferPool.pageSize = DEFAULT_PAGE_SIZE;
+        BufferPool.pageSize = DEFAULT_PAGE_SIZE;
     }
 
     /**
@@ -80,20 +80,20 @@ public class BufferPool {
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm){
         //Lab-1 Exercise 3
-            if (this.cache.containsKey(pid)) {
-                return this.cache.get(pid); // If page already exists in cache it returns the page
+        if (this.cache.containsKey(pid)) {
+            return this.cache.get(pid); // If page already exists in cache it returns the page
+        }
+        else {
+            // Writes the page onto cache and returns it
+            if (this.cache.size() >=this.maxNumPages){
+                // Page eviction policy needs to be implemented
+                System.out.println("Max number of pages exceeded|BufferPool.Java|getPage(TransactionId tid, PageId pid, Permissions perm)");
             }
-            else {
-                // Writes the page onto cache and returns it
-                if (this.cache.size() >=this.maxNumPages){
-                    // Page eviction policy needs to be implemented
-                    System.out.println("Max number of pages exceeded|BufferPool.Java|getPage(TransactionId tid, PageId pid, Permissions perm)");
-                }
-                DbFile dbfile = Database.getCatalog().getDatabaseFile(pid.getTableId());
-                Page newPage = dbfile.readPage(pid);
-                this.cache.put(pid, newPage);
-                return newPage;
-            }
+            DbFile dbfile = Database.getCatalog().getDatabaseFile(pid.getTableId());
+            Page newPage = dbfile.readPage(pid);
+            this.cache.put(pid, newPage);
+            return newPage;
+        }
     }
 
     /**
@@ -155,15 +155,25 @@ public class BufferPool {
      * @param t the tuple to add
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
-        throws DbException, IOException, TransactionAbortedException {
+            throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for 
-        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        List<Page> affectedPages = table.insertTuple(tid, t);
-        for (Page page : affectedPages) {
+        // not necessary for
+        HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
+        List<Page> modpages = file.insertTuple(tid, t);
+
+        for (Page page: modpages) {
             page.markDirty(true, tid);
+
+            if (cache.size() > this.maxNumPages) {
+                evictPage();
+            }
+
+            cache.put(page.getId(), page);
         }
+
+
     }
+
 
 
     /**
@@ -180,16 +190,24 @@ public class BufferPool {
      * @param t the tuple to delete
      */
     public void deleteTuple(TransactionId tid, Tuple t)
-        throws DbException, IOException, TransactionAbortedException {
+            throws DbException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
-        int tableId=t.getRecordId().getPageId().getTableId();
-        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        ArrayList<Page> affectedPage = table.deleteTuple(tid, t);
-        for (Page page : affectedPage) {
-            page.markDirty(true, tid);
+        try {
+            int tableId=t.getRecordId().getPageId().getTableId();
+            HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
+            ArrayList<Page> affectedPage = table.deleteTuple(tid, t);
+            for (Page page : affectedPage) {
+                page.markDirty(true, tid);
+                if (cache.size() > this.maxNumPages) {
+                    evictPage();
+                }
+                cache.put(page.getId(), page);
+            }
+        } catch(NullPointerException e){
+            throw new DbException("Tuple not in any table | BufferPool.Java | deleteTuple(TransactionId tid, Tuple t) ");
         }
-    
+
     }
     /**
      * Flush all dirty pages to disk.
@@ -207,13 +225,13 @@ public class BufferPool {
     }
 
     /** Remove the specific page id from the buffer pool.
-        Needed by the recovery manager to ensure that the
-        buffer pool doesn't keep a rolled back page in its
-        cache.
+     Needed by the recovery manager to ensure that the
+     buffer pool doesn't keep a rolled back page in its
+     cache.
 
-        Also used by B+ tree files to ensure that deleted pages
-        are removed from the cache so they can be reused safely
-    */
+     Also used by B+ tree files to ensure that deleted pages
+     are removed from the cache so they can be reused safely
+     */
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1

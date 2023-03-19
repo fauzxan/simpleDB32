@@ -2,6 +2,7 @@ package simpledb.execution;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 import simpledb.common.Type;
 import simpledb.storage.Tuple;
@@ -23,7 +24,8 @@ public class IntegerAggregator implements Aggregator {
     private Op what;
     private ConcurrentHashMap<IntField, Integer> aggregator;
     private IntField keyValue;
-    private ArrayList<Integer> averageAndCountHelper;
+    private ArrayList<Integer> CountHelper;
+    private HashMap<IntField, ArrayList<Integer>> averageHelper;
     /**
      * Aggregate constructor
      * 
@@ -46,10 +48,9 @@ public class IntegerAggregator implements Aggregator {
         this.aggregateFieldIndex = afield;
         this.what = what;
         this.aggregator = new ConcurrentHashMap<IntField, Integer>();
-        if (this.what == Op.AVG || this.what == Op.COUNT){
-            this.averageAndCountHelper = new ArrayList<Integer>();
-        }
         this.keyValue = new IntField(0);
+        this.CountHelper = new ArrayList<Integer>();
+        this.averageHelper = new HashMap<IntField, ArrayList<Integer>>();
     }
 
     /**
@@ -62,7 +63,8 @@ public class IntegerAggregator implements Aggregator {
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
 
-        if(this.groupByIndex != NO_GROUPING) this.keyValue = (IntField) tup.getField(this.groupByIndex);
+        if(this.groupByIndex != NO_GROUPING && this.groupByType == Type.INT_TYPE) this.keyValue = (IntField) tup.getField(this.groupByIndex);
+        else if (this.groupByIndex != NO_GROUPING && this.groupByType == Type.STRING_TYPE) this.keyValue = new IntField(tup.getField(this.groupByIndex).hashCode());
         IntField aValue = (IntField) tup.getField(this.aggregateFieldIndex);
 
 
@@ -104,19 +106,25 @@ public class IntegerAggregator implements Aggregator {
         }
 
         else if (this.what == Op.AVG){
-            this.averageAndCountHelper.add(aValue.getValue());
+            if (!this.averageHelper.containsKey(this.keyValue)){
+                this.averageHelper.put(this.keyValue, new ArrayList<Integer>());
+            }
+            ArrayList<Integer> newList = this.averageHelper.get(this.keyValue);
+            newList.add(aValue.getValue());
+            this.averageHelper.put(this.keyValue, newList);
+
             Integer Average = 0;
-            // Not using IntSummaryStatistics class for average calculation due to constructor overhead.
-            for (Integer i: this.averageAndCountHelper){
+            for (Integer i: this.averageHelper.get(this.keyValue)){
                 Average += i;
             }
-            Average = Average / this.averageAndCountHelper.size();
+//            System.out.println(Average);
+            Average = Average / this.averageHelper.get(this.keyValue).size();
             aggregator.put(keyValue, Average);
         }
 
         else if (this.what == Op.COUNT){
-            this.averageAndCountHelper.add(aValue.getValue());
-            aggregator.put(keyValue, this.averageAndCountHelper.size());
+            this.CountHelper.add(aValue.getValue());
+            aggregator.put(keyValue, this.CountHelper.size());
         }
     }
 
