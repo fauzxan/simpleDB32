@@ -35,6 +35,7 @@ public class BufferPool {
     public static final int DEFAULT_PAGES = 50;
     private ConcurrentHashMap<PageId, Page> cache;
     private int maxNumPages;
+    private final int numPages;
 
 
     /**
@@ -157,7 +158,8 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for 
-        DbFile f = Database.getCatalog().getDatabaseFile(tableId);
+        
+        HeapFile f = (HeapFile)Database.getCatalog().getDatabaseFile(tableId);
         updateBufferPool(f.insertTuple(tid,t),tid);
         }
 
@@ -179,7 +181,7 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
-        DbFile f = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
+        HeapFile f = (HeapFile)Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
         updateBufferPool(f.deleteTuple(tid,t),tid);
     
     }
