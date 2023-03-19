@@ -120,12 +120,13 @@ public class IntegerAggregatorTest extends SimpleDbTestBase {
   @Test public void mergeAvg() throws Exception {
     scan1.open();
     IntegerAggregator agg = new IntegerAggregator(0, Type.INT_TYPE, 1, Aggregator.Op.AVG);
-
+    int count = 0;
     OpIterator it;
     for (int[] step : avg) {
       agg.mergeTupleIntoGroup(scan1.next());
       it = agg.iterator();
       it.open();
+
       TestUtil.matchAllTuples(TestUtil.createTupleList(width1, step), it);
     }
   }
