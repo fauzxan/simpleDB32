@@ -5,6 +5,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import simpledb.common.Type;
 import simpledb.storage.Tuple;
+import simpledb.storage.TupleDesc;
+import simpledb.storage.IntField;
+import simpledb.storage.StringField;
+import simpledb.storage.TupleIterator;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
@@ -17,7 +21,8 @@ public class IntegerAggregator implements Aggregator {
     private Type groupByType;
     private int aggregateFieldIndex;
     private Op what;
-    public ConcurrentHashMap<Integer, Integer> aggregator;
+    private ConcurrentHashMap<IntField, Integer> aggregator;
+    private IntField keyValue;
     private ArrayList<Integer> averageAndCountHelper;
     /**
      * Aggregate constructor
@@ -37,16 +42,14 @@ public class IntegerAggregator implements Aggregator {
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
         this.groupByIndex = gbfield;
-        if (this.groupByType != Type.INT_TYPE){
-            System.out.println("Group by type is not an integer!");
-        }
         this.groupByType = gbfieldtype;
         this.aggregateFieldIndex = afield;
         this.what = what;
-        this.aggregator = new ConcurrentHashMap<Integer, Integer>();
+        this.aggregator = new ConcurrentHashMap<IntField, Integer>();
         if (this.what == Op.AVG || this.what == Op.COUNT){
             this.averageAndCountHelper = new ArrayList<Integer>();
         }
+        this.keyValue = new IntField(0);
     }
 
     /**
@@ -58,52 +61,50 @@ public class IntegerAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
-        // You need to put things into your aggregator, but group it first.
 
-        System.out.println("\n\n\n\n\n\n");
-        Integer keyValue = Integer.valueOf(tup.getField(this.groupByIndex).toString());
-        Integer aValue = Integer.valueOf(tup.getField(this.aggregateFieldIndex).toString());
+        if(this.groupByIndex != NO_GROUPING) this.keyValue = (IntField) tup.getField(this.groupByIndex);
+        IntField aValue = (IntField) tup.getField(this.aggregateFieldIndex);
 
 
         if (this.what == Op.SUM){
             // if the value already exists in the aggregator, then replace the old value with the new one.
             if (aggregator.containsKey(keyValue)){
-                aggregator.replace(keyValue, aggregator.get(keyValue), aggregator.get(keyValue) + aValue);
+                aggregator.replace(keyValue, aggregator.get(keyValue) + aValue.getValue());
             }
             // Otherwise, enter a new value into the aggregator
             else{
-                aggregator.put(keyValue, aValue);
+                aggregator.put(keyValue, aValue.getValue());
             }
         }
 
         else if (this.what == Op.MAX){
             // if the value already exists in the aggregator, then replace the old value with the new one.
             if (aggregator.containsKey(keyValue)){
-                if (aggregator.get(keyValue) < aValue){
-                    aggregator.replace(keyValue, aggregator.get(keyValue), aValue);
+                if (aggregator.get(keyValue) < aValue.getValue()){
+                    aggregator.replace(keyValue, aValue.getValue());
                 }
             }
             // Otherwise, enter a new value into the aggregator
             else{
-                aggregator.put(keyValue, aValue);
+                aggregator.put(keyValue, aValue.getValue());
             }
         }
 
         else if (this.what == Op.MIN){
             // if the value already exists in the aggregator, then replace the old value with the new one.
             if (aggregator.containsKey(keyValue)){
-                if (aggregator.get(keyValue) > aValue){
-                    aggregator.replace(keyValue, aggregator.get(keyValue), aValue);
+                if (aggregator.get(keyValue) > aValue.getValue()){
+                    aggregator.replace(keyValue, aValue.getValue());
                 }
             }
             // Otherwise, enter a new value into the aggregator
             else{
-                aggregator.put(keyValue, aValue);
+                aggregator.put(keyValue, aValue.getValue());
             }
         }
 
         else if (this.what == Op.AVG){
-            this.averageAndCountHelper.add(aValue);
+            this.averageAndCountHelper.add(aValue.getValue());
             Integer Average = 0;
             // Not using IntSummaryStatistics class for average calculation due to constructor overhead.
             for (Integer i: this.averageAndCountHelper){
@@ -114,10 +115,9 @@ public class IntegerAggregator implements Aggregator {
         }
 
         else if (this.what == Op.COUNT){
-            this.averageAndCountHelper.add(aValue);
+            this.averageAndCountHelper.add(aValue.getValue());
             aggregator.put(keyValue, this.averageAndCountHelper.size());
         }
-
     }
 
     /**
@@ -131,7 +131,36 @@ public class IntegerAggregator implements Aggregator {
     public OpIterator iterator() {
         // some code goes here
         //return this.aggregator.iterator();
-        throw new Exception("Has not been implemented yet!");
+        ArrayList<Tuple> tuples = new ArrayList<>();
+
+        if (this.groupByIndex != NO_GROUPING){
+            TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
+                    new TupleDesc.TDItem(Type.INT_TYPE, "GroupByField"),
+                    new TupleDesc.TDItem(Type.INT_TYPE, "AggregateField")
+            };
+            TupleDesc td = new TupleDesc(tdItems);
+
+            for (IntField key: this.aggregator.keySet()) {
+                Tuple t = new Tuple(td);
+                t.setField(0, key);
+                t.setField(1, new IntField(this.aggregator.get(key)));
+                tuples.add(t);
+            }
+
+            return new TupleIterator(td, tuples);
+        }
+
+        else{
+            TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
+                    new TupleDesc.TDItem(Type.INT_TYPE, "AggregateField")
+            };
+            TupleDesc td = new TupleDesc(tdItems);
+            Tuple t = new Tuple(td);
+            t.setField(0, new IntField(aggregator.get(this.keyValue)));
+            tuples.add(t);
+            return new TupleIterator(td, tuples);
+        }
+        // throw new UnsupportedOperationException("please implement me for lab2");
     }
 
 }

@@ -1,14 +1,28 @@
 package simpledb.execution;
 
+
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+
 import simpledb.common.Type;
 import simpledb.storage.Tuple;
-
+import simpledb.storage.TupleDesc;
+import simpledb.storage.IntField;
+import simpledb.storage.StringField;
+import simpledb.storage.TupleIterator;
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
 public class StringAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+    private int groupByIndex;
+    private Type groupByType;
+    private int aggregateFieldIndex;
+    private Op what;
+    private ConcurrentHashMap<IntField, Integer> aggregator;
+    private IntField keyValue;
+    private ArrayList<String> countHelper;
 
     /**
      * Aggregate constructor
@@ -21,6 +35,18 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
+        this.groupByIndex = gbfield;
+        this.groupByType = gbfieldtype;
+        this.aggregateFieldIndex = afield;
+        if (this.what == Op.COUNT){
+            this.what = what;
+        }
+        else{
+            throw new IllegalArgumentException("Operator passed is not Op.COUNT | StringAggregator() | StringAggregator.java");
+        }
+        this.aggregator = new ConcurrentHashMap<IntField, Integer>();
+        this.countHelper = new ArrayList<String>();
+        this.keyValue = new IntField(0);
     }
 
     /**
@@ -29,6 +55,16 @@ public class StringAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+
+        if(this.groupByIndex != NO_GROUPING) this.keyValue = (IntField) tup.getField(this.groupByIndex); // update key value if grouping exists
+        StringField aValue = (StringField) tup.getField(this.aggregateFieldIndex);
+
+
+        if (this.what == Op.COUNT){
+            this.countHelper.add(aValue.getValue());
+            aggregator.put(this.keyValue, this.countHelper.size());
+        }
+
     }
 
     /**
@@ -41,7 +77,35 @@ public class StringAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        throw new UnsupportedOperationException("please implement me for lab2");
+        ArrayList<Tuple> tuples = new ArrayList<>();
+
+        if (this.groupByIndex != NO_GROUPING){
+            TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
+                    new TupleDesc.TDItem(Type.INT_TYPE, "GroupByField"),
+                    new TupleDesc.TDItem(Type.STRING_TYPE, "AggregateField")
+            };
+            TupleDesc td = new TupleDesc(tdItems);
+
+            for (IntField key: this.aggregator.keySet()) {
+                Tuple t = new Tuple(td);
+                t.setField(0, key);
+                t.setField(1, new IntField(this.aggregator.get(key)));
+                tuples.add(t);
+            }
+
+            return new TupleIterator(td, tuples);
+        }
+
+        else{
+            TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
+                    new TupleDesc.TDItem(Type.INT_TYPE, "AggregateField")
+            };
+            TupleDesc td = new TupleDesc(tdItems);
+            Tuple t = new Tuple(td);
+            t.setField(0, new IntField(aggregator.get(this.keyValue)));
+            tuples.add(t);
+            return new TupleIterator(td, tuples);
+        }
     }
 
 }

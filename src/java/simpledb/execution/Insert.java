@@ -7,6 +7,9 @@ import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+import simpledb.common.Type;
+import simpledb.storage.IntField;
+
 import java.io.IOException;
 
 /**
@@ -110,7 +113,7 @@ public class Insert extends Operator {
         }
         hasEntered = true;
         Tuple inserted_num=new Tuple(getTupleDesc());
-        inserted_num.setField(0,count);
+        inserted_num.setField(0,new IntField(count));
         return inserted_num;
     }
 

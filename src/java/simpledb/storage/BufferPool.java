@@ -160,7 +160,7 @@ public class BufferPool {
         DbFile f = Database.getCatalog().getDatabaseFile(tableId);
         updateBufferPool(f.insertTuple(tid,t),tid);
         }
-    }
+
 
     /**
      * Remove the specified tuple from the buffer pool.
@@ -175,7 +175,7 @@ public class BufferPool {
      * @param tid the transaction deleting the tuple.
      * @param t the tuple to delete
      */
-    public  void deleteTuple(TransactionId tid, Tuple t)
+    public void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
@@ -215,7 +215,7 @@ public class BufferPool {
         Also used by B+ tree files to ensure that deleted pages
         are removed from the cache so they can be reused safely
     */
-    public synchronized void discardPage(PageId pid) {fxaxhe
+    public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
         this.cache.remove(pid);

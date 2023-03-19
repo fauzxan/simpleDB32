@@ -98,7 +98,7 @@ public class TupleDesc implements Serializable {
     public TupleDesc(Type[] typeAr) {
         this(typeAr, new String[typeAr.length]);
     }
-    private TupleDesc(TDItem[] tdItems) {
+    public TupleDesc(TDItem[] tdItems) {
         if (tdItems == null || tdItems.length == 0) {
             throw new IllegalArgumentException("tdItems parameter was null or empty | TupleDesc.java | TupleDesc(TDItem[])");
         }
