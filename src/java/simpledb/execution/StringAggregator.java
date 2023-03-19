@@ -86,8 +86,8 @@ public class StringAggregator implements Aggregator {
 
         if (this.groupByIndex != NO_GROUPING){
             TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                    new TupleDesc.TDItem(Type.INT_TYPE, "GroupByField"),
-                    new TupleDesc.TDItem(Type.INT_TYPE, "AggregateField")
+                    new TupleDesc.TDItem(Type.INT_TYPE, null),
+                    new TupleDesc.TDItem(Type.INT_TYPE, null)
             };
             TupleDesc td = new TupleDesc(tdItems);
 
@@ -102,7 +102,7 @@ public class StringAggregator implements Aggregator {
 
         else{
             TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                    new TupleDesc.TDItem(Type.INT_TYPE, "AggregateField")
+                    new TupleDesc.TDItem(Type.INT_TYPE, null)
             };
             TupleDesc td = new TupleDesc(tdItems);
             Tuple t = new Tuple(td);
