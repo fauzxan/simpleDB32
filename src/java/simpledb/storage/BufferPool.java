@@ -158,10 +158,12 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for 
-        
-        HeapFile f = (HeapFile)Database.getCatalog().getDatabaseFile(tableId);
-        updateBufferPool(f.insertTuple(tid,t),tid);
+        HeapFile table = (HeapFile) Database.getCatalog().getDbFile(tableId);
+        ArrayList<Page> affectedPages = table.insertTuple(tid, t);
+        for (Page page : affectedPages) {
+            page.markDirty(true, tid);
         }
+    }
 
 
     /**
@@ -181,18 +183,11 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
-        HeapFile f = (HeapFile)Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId());
-        updateBufferPool(f.deleteTuple(tid,t),tid);
+        int tableId=t.getRecordId().getPageId().getTableId();
+        HeapFile table = (HeapFile) Database.getCatalog().getDbFile(tableId);
+        Page affectedPage = table.deleteTuple(tid, t);
+        affectedPage.markDirty(true,tid);
     
-    }
-
-    private void updateBufferPool(ArrayList<Page> pagelist, TransactionId tid) throws DbException{
-        for(Page p: pagelist){
-            if(this.cache.size()>numPages){
-                evictPage();
-            }
-            this.cache.put(p.getId(),p);
-        }
     }
     /**
      * Flush all dirty pages to disk.
