@@ -35,7 +35,6 @@ public class BufferPool {
     public static final int DEFAULT_PAGES = 50;
     private ConcurrentHashMap<PageId, Page> cache;
     private int maxNumPages;
-    private final int numPages;
 
 
     /**
