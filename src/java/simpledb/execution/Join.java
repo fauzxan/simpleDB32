@@ -151,3 +151,4 @@ public class Join extends Operator {
         child1 = children[0];
         child2 = children[1];
     }
+}

@@ -2,12 +2,14 @@ package simpledb.execution;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.common.Type;
-import simpledb.storage.*;
+import simpledb.storage.BufferPool;
+import simpledb.storage.Tuple;
+import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+import simpledb.common.Type;
+import simpledb.storage.IntField;
 
-import javax.xml.crypto.Data;
 import java.io.IOException;
 
 /**
@@ -18,16 +20,23 @@ public class Insert extends Operator {
 
     private static final long serialVersionUID = 1L;
 
-    private TransactionId tid;
     private OpIterator child;
-    private int tableid;
-    private boolean isCalled;
-    private TupleDesc outputTD;
+
+    private int count;
+
+    private TupleDesc td;
+
+    private boolean hasEntered;
+
+    private TransactionId tid;
+
+    private int tableId;
+
 
     /**
      * Constructor.
      *
-     * @param tid
+     * @param t
      *            The transaction running the insert.
      * @param child
      *            The child operator from which to read tuples to be inserted.
@@ -37,44 +46,55 @@ public class Insert extends Operator {
      *             if TupleDesc of child differs from table into which we are to
      *             insert.
      */
-    public Insert(TransactionId tid, OpIterator child, int tableId)
+    public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
         // some code goes here
-        TupleDesc table_td = Database.getCatalog().getTupleDesc(tableId);
-        TupleDesc opit_td = child.getTupleDesc();
-        if (!opit_td.equals(table_td))
-            throw new DbException("tupledesc mismatch");
-
-        this.tid = tid;
+        this.tid = t;
+        this.tableId = tableId;
         this.child = child;
-        this.tableid = tableId;
-        this.isCalled=false;
-        this.outputTD = new TupleDesc(new Type[]{Type.INT_TYPE});
+        this.count = -1;
+        Type[] typeAr = new Type[1];
+        typeAr[0] = Type.INT_TYPE;
+        String[] stringAr = new String[1];
+        stringAr[0] = null;
+        td = new TupleDesc(typeAr, stringAr);
+        //td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{null});
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        //reminder: return the TupleDesc of the output tuples of this operator
-        return outputTD;
+        return this.td;
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        hasEntered = false;
+        this.count =0;
+        this.child.open();
         super.open();
-        child.open();
+        while(this.child.hasNext()){
+            Tuple next = this.child.next();
+            try{
+                Database.getBufferPool().insertTuple(tid, tableId, next);
+                this.count ++;
+            } catch (IOException e){
+                e.printStackTrace();
+            }
+        }
     }
 
     public void close() {
         // some code goes here
         super.close();
-        child.close();
-        isCalled=false;
+        this.count = -1;
+        this.child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
-        child.rewind();
-        isCalled=false;
+        this.child.rewind();
+        this.count = 0;
+        hasEntered = false;
     }
 
     /**
@@ -92,24 +112,13 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        if (isCalled)
+        if (hasEntered) {
             return null;
-
-        isCalled = true;
-
-        Tuple num_tuple = new Tuple(outputTD);
-        int tupleInserted = 0;
-        while(child.hasNext()){
-            Tuple t = child.next();
-            try{
-                Database.getBufferPool().insertTuple(tid, tableid, t);
-                tupleInserted += 1;
-            } catch (IOException e){
-                throw new DbException("fail to insert");
-            }
         }
-        num_tuple.setField(0, new IntField(tupleInserted));
-        return num_tuple;
+        hasEntered = true;
+        Tuple inserted_num=new Tuple(getTupleDesc());
+        inserted_num.setField(0,new IntField(this.count));
+        return inserted_num;
     }
 
     @Override
