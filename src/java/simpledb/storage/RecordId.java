@@ -2,6 +2,7 @@ package simpledb.storage;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -13,6 +14,7 @@ public class RecordId implements Serializable {
     private static final long serialVersionUID = 1L;
     PageId pid;
     Integer tupleno;
+    List<Object> recordId;
 
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
@@ -27,6 +29,10 @@ public class RecordId implements Serializable {
         // Lab-1 Exercise 4
         this.pid = pid;
         this.tupleno = tupleno;
+
+        this.recordId = new ArrayList<Object> (2);
+        recordId.add(pid);
+        recordId.add(tupleno);
     }
 
     /**
@@ -35,7 +41,7 @@ public class RecordId implements Serializable {
     public int getTupleNumber() throws NoSuchElementException{
         // Lab-1 Exercise 4
         if (this.tupleno != null) {
-            return this.tupleno;
+            return (int) this.recordId.get(1);
         }
         else throw new NoSuchElementException("No such tupleno | RecordId.java | getTupleNumber()");
     }
@@ -45,7 +51,7 @@ public class RecordId implements Serializable {
      */
     public PageId getPageId(){
         // Lab-1 Exercise 4
-        return this.pid;
+        return (PageId) this.recordId.get(0);
     }
 
     /**
@@ -69,7 +75,7 @@ public class RecordId implements Serializable {
     @Override
     public int hashCode() {
         // Lab-1 Exercise 4
-        String hashitem = this.tupleno.toString() + "," + this.pid.toString();
+        String hashitem = this.recordId.get(0).toString() + "," + this.recordId.get(1).toString();
         return hashitem.hashCode();
     }
 
