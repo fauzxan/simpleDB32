@@ -26,7 +26,6 @@ public class IntegerAggregator implements Aggregator {
     private ConcurrentHashMap<StringField, Integer> aggregatorS;
     private IntField keyValue;
     private StringField keyValueS;
-    private ArrayList<Integer> CountHelper;
     private HashMap<IntField, ArrayList<Integer>> averageHelper;
     private HashMap<StringField, ArrayList<Integer>> averageHelperS;
     /**
@@ -53,11 +52,9 @@ public class IntegerAggregator implements Aggregator {
         this.aggregator = new ConcurrentHashMap<IntField, Integer>();
         this.aggregatorS = new ConcurrentHashMap<StringField, Integer>();
         this.keyValue = new IntField(0);
-        this.keyValueS = new StringField("~", 10000);
-        this.CountHelper = new ArrayList<Integer>();
+        this.keyValueS = new StringField("~", 1000);
         this.averageHelper = new HashMap<IntField, ArrayList<Integer>>();
         this.averageHelperS = new HashMap<StringField, ArrayList<Integer>>();
-
     }
 
     /**
@@ -74,37 +71,37 @@ public class IntegerAggregator implements Aggregator {
         else if (this.groupByIndex != NO_GROUPING && this.groupByType == Type.STRING_TYPE) this.keyValueS = (StringField) tup.getField(this.groupByIndex);
         IntField aValue = (IntField) tup.getField(this.aggregateFieldIndex);
 
-        if (this.groupByType == Type.INT_TYPE){
+        if (this.groupByType == Type.INT_TYPE || this.groupByType == null){
             if (this.what == Op.SUM) {
                 // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregator.containsKey(keyValue)) {
-                    aggregator.replace(keyValue, aggregator.get(keyValue) + aValue.getValue());
+                if (aggregator.containsKey(this.keyValue)) {
+                    aggregator.replace(this.keyValue, aggregator.get(this.keyValue) + aValue.getValue());
                 }
                 // Otherwise, enter a new value into the aggregator
                 else {
-                    aggregator.put(keyValue, aValue.getValue());
+                    aggregator.put(this.keyValue, aValue.getValue());
                 }
             } else if (this.what == Op.MAX) {
                 // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregator.containsKey(keyValue)) {
-                    if (aggregator.get(keyValue) < aValue.getValue()) {
-                        aggregator.replace(keyValue, aValue.getValue());
+                if (aggregator.containsKey(this.keyValue)) {
+                    if (aggregator.get(this.keyValue) < aValue.getValue()) {
+                        aggregator.replace(this.keyValue, aValue.getValue());
                     }
                 }
                 // Otherwise, enter a new value into the aggregator
                 else {
-                    aggregator.put(keyValue, aValue.getValue());
+                    aggregator.put(this.keyValue, aValue.getValue());
                 }
             } else if (this.what == Op.MIN) {
                 // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregator.containsKey(keyValue)) {
-                    if (aggregator.get(keyValue) > aValue.getValue()) {
-                        aggregator.replace(keyValue, aValue.getValue());
+                if (aggregator.containsKey(this.keyValue)) {
+                    if (aggregator.get(this.keyValue) > aValue.getValue()) {
+                        aggregator.replace(this.keyValue, aValue.getValue());
                     }
                 }
                 // Otherwise, enter a new value into the aggregator
                 else {
-                    aggregator.put(keyValue, aValue.getValue());
+                    aggregator.put(this.keyValue, aValue.getValue());
                 }
             } else if (this.what == Op.AVG) {
                 if (!this.averageHelper.containsKey(this.keyValue)) {
@@ -118,45 +115,53 @@ public class IntegerAggregator implements Aggregator {
                 for (Integer i : this.averageHelper.get(this.keyValue)) {
                     Average += i;
                 }
-//            System.out.println(Average);
                 Average = Average / this.averageHelper.get(this.keyValue).size();
-                aggregator.put(keyValue, Average);
+                aggregator.put(this.keyValue, Average);
             } else if (this.what == Op.COUNT) {
-                this.CountHelper.add(aValue.getValue());
-                aggregator.put(keyValue, this.CountHelper.size());
+                if (!aggregator.containsKey(this.keyValue)) {
+                    aggregator.put(this.keyValue, 1);
+                }
+                else {
+                    aggregator.replace(this.keyValue, aggregator.get(this.keyValue) + 1);
+                }
             }
         }
+
+        /**
+         * STRING_TYPE
+         * Different variables used if groupByType is String.
+         */
         if (this.groupByType == Type.STRING_TYPE){
             if (this.what == Op.SUM) {
                 // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregatorS.containsKey(keyValueS)) {
-                    aggregatorS.replace(keyValueS, aggregatorS.get(keyValueS) + aValue.getValue());
+                if (aggregatorS.containsKey(this.keyValueS)) {
+                    aggregatorS.replace(this.keyValueS, aggregatorS.get(this.keyValueS) + aValue.getValue());
                 }
                 // Otherwise, enter a new value into the aggregator
                 else {
-                    aggregatorS.put(keyValueS, aValue.getValue());
+                    aggregatorS.put(this.keyValueS, aValue.getValue());
                 }
             } else if (this.what == Op.MAX) {
                 // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregatorS.containsKey(keyValueS)) {
-                    if (aggregatorS.get(keyValueS) < aValue.getValue()) {
-                        aggregatorS.replace(keyValueS, aValue.getValue());
+                if (aggregatorS.containsKey(this.keyValueS)) {
+                    if (aggregatorS.get(this.keyValueS) < aValue.getValue()) {
+                        aggregatorS.replace(this.keyValueS, aValue.getValue());
                     }
                 }
                 // Otherwise, enter a new value into the aggregator
                 else {
-                    aggregatorS.put(keyValueS, aValue.getValue());
+                    aggregatorS.put(this.keyValueS, aValue.getValue());
                 }
             } else if (this.what == Op.MIN) {
                 // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregatorS.containsKey(keyValueS)) {
-                    if (aggregatorS.get(keyValueS) > aValue.getValue()) {
-                        aggregatorS.replace(keyValueS, aValue.getValue());
+                if (aggregatorS.containsKey(this.keyValueS)) {
+                    if (aggregatorS.get(this.keyValueS) > aValue.getValue()) {
+                        aggregatorS.replace(this.keyValueS, aValue.getValue());
                     }
                 }
                 // Otherwise, enter a new value into the aggregator
                 else {
-                    aggregatorS.put(keyValueS, aValue.getValue());
+                    aggregatorS.put(this.keyValueS, aValue.getValue());
                 }
             } else if (this.what == Op.AVG) {
                 if (!this.averageHelperS.containsKey(this.keyValueS)) {
@@ -170,12 +175,15 @@ public class IntegerAggregator implements Aggregator {
                 for (Integer i : this.averageHelperS.get(this.keyValueS)) {
                     Average += i;
                 }
-//            System.out.println(Average);
                 Average = Average / this.averageHelperS.get(this.keyValueS).size();
-                aggregatorS.put(keyValueS, Average);
+                aggregatorS.put(this.keyValueS, Average);
             } else if (this.what == Op.COUNT) {
-                this.CountHelper.add(aValue.getValue());
-                aggregatorS.put(keyValueS, this.CountHelper.size());
+                if (!aggregatorS.containsKey(this.keyValueS)) {
+                    aggregatorS.put(this.keyValueS, 1);
+                }
+                else {
+                    aggregatorS.replace(this.keyValueS, aggregatorS.get(this.keyValueS) + 1);
+                }
             }
         }
 
@@ -243,7 +251,7 @@ public class IntegerAggregator implements Aggregator {
                 };
                 TupleDesc td = new TupleDesc(tdItems);
                 Tuple t = new Tuple(td);
-                t.setField(0, new IntField(aggregatorS.get(this.keyValueS)));
+                t.setField(0, new IntField(aggregator.get(this.keyValue)));
                 tuples.add(t);
                 return new TupleIterator(td, tuples);
             }
