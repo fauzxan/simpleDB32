@@ -57,8 +57,8 @@ public class Aggregate extends Operator {
         try{
             gfieldtype = td.getFieldType(gfield);
         } catch (NoSuchElementException e){
-//            System.out.println("No grouping");
-            gfieldtype=null;
+            System.out.println("No grouping detected | Aggregate.java | Aggregate()");
+            gfieldtype = null;
         }
 
         if(td.getFieldType(afield) == Type.INT_TYPE){

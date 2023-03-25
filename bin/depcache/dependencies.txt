@@ -2013,8 +2013,10 @@ simpledb.execution.Operator
 java.util.NoSuchElementException
 simpledb.transaction.TransactionAbortedException
 ||:simpledb.execution.Aggregate
+java.io.PrintStream
 simpledb.common.DbException
 simpledb.common.Type
+java.lang.System
 simpledb.storage.TupleDesc
 java.lang.Exception
 simpledb.execution.Aggregator$Op
