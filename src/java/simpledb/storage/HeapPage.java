@@ -306,6 +306,7 @@ public class HeapPage implements Page {
         // some code goes here
         if(dirty)
             return dirtiedbytid;
+        System.out.println("Page is not dirty | HeapPage.java | isDirty()");
         return null;
     }
 

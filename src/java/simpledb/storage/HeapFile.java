@@ -24,6 +24,7 @@ import java.util.*;
 public class HeapFile implements DbFile {
     private File file;
     private TupleDesc tupleDesc;
+    ArrayList<Page> changedPages;
 
     /**
      * Constructs a heap file backed by the specified file.
@@ -36,6 +37,7 @@ public class HeapFile implements DbFile {
         //Lab-1 Exercise 5
         this.file = f;
         this.tupleDesc = td;
+        this.changedPages = new ArrayList<Page>();
     }
 
     /**
@@ -126,6 +128,8 @@ public class HeapFile implements DbFile {
     }
 
     // see DbFile.java for javadocs
+    // Modification of this function: markDirty is already being called by BuffePool. So, commenting out here for now to
+    // see if it breaks the code first.
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         //Lab-2 Exercise 3
@@ -139,7 +143,7 @@ public class HeapFile implements DbFile {
             if(page.getNumEmptySlots()>0) {
                 page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
                 page.insertTuple(t);
-                page.markDirty(true, tid);
+//                page.markDirty(true, tid);
                 break;
             }
             pg += 1;
@@ -150,13 +154,11 @@ public class HeapFile implements DbFile {
             pid = new HeapPageId(getId(), pg);
             page = new HeapPage(pid, HeapPage.createEmptyPageData());
             page.insertTuple(t);
-            page.markDirty(true, tid);
+//            page.markDirty(true, tid);
             writePage(page);
         }
-
-        List<Page> changed_pages = new ArrayList<Page>();
-        changed_pages.add(page);
-        return changed_pages;
+        this.changedPages.add(page);
+        return changedPages;
 
     }
 
@@ -168,9 +170,9 @@ public class HeapFile implements DbFile {
         if (page==null)
             throw new DbException("Not a valid tuple| HeapFile.Java | deleteTuple(TransactionId tid, Tuple t)");
         page.deleteTuple(t);
-        ArrayList<Page> pages = new ArrayList<>();
-        pages.add(page);
-        return pages;
+//        ArrayList<Page> pages = new ArrayList<>();
+        this.changedPages.add(page);
+        return changedPages;
     }
 
     /**
