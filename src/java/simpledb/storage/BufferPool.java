@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
 import java.io.IOException;
 
+
 /**
  * BufferPool manages the reading and writing of pages into memory from
  * disk. Access methods call into it to retrieve pages, and it fetches
@@ -27,6 +28,7 @@ import java.io.IOException;
 public class BufferPool {
     /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
+    private final LockManager lockManager;
 
     /**
      * Frame contains the following:
@@ -87,6 +89,7 @@ public class BufferPool {
         this.numPages = numPages; // Max Pages that can be cached
         this.cache = new ConcurrentHashMap<PageId, Page>(); // Creates a new Cache
         this.LRUCache = new ConcurrentHashMap<PageId, Frame>(); // Creates a new LRU cache, need to replace the cache above
+        lockManager = new LockManager();
     }
 
     public static int getPageSize() {
@@ -119,6 +122,28 @@ public class BufferPool {
      * @param perm the requested permissions on the page
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException{
+         
+        //Aditya Version L3Ex5//
+        int lockType;
+        if(perm == Permissions.READ_ONLY){
+            lockType = 0;
+        }
+        else{
+            lockType = 1;
+        }
+        boolean lockAttained = false;
+        long start = System.currentTimeMillis();
+        long timeout = new Random().nextInt(2000) + 1000;
+
+        while(!lockAttained){
+            lonf now = System.currentTimeMillis():
+            if(now-start > timeout){
+                throw new TransactionAbortedException();
+            }
+            lockAttained = lockManager.acquireLock(pid, tid, lockType);
+        }
+        //Aditya Version L3Ex5//
+
         //Lab-1 Exercise 3
         if (this.LRUCache.containsKey(pid)) {
             return this.LRUCache.get(pid).getPage();
