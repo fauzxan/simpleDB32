@@ -123,26 +123,7 @@ public class BufferPool {
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException{
          
-        //Aditya Version L3Ex5//
-        int lockType;
-        if(perm == Permissions.READ_ONLY){
-            lockType = 0;
-        }
-        else{
-            lockType = 1;
-        }
-        boolean lockAttained = false;
-        long start = System.currentTimeMillis();
-        long timeout = new Random().nextInt(2000) + 1000;
 
-        while(!lockAttained){
-            lonf now = System.currentTimeMillis():
-            if(now-start > timeout){
-                throw new TransactionAbortedException();
-            }
-            lockAttained = lockManager.acquireLock(pid, tid, lockType);
-        }
-        //Aditya Version L3Ex5//
 
         //Lab-1 Exercise 3
         if (this.LRUCache.containsKey(pid)) {
