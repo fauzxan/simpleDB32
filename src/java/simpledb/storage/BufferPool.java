@@ -136,7 +136,7 @@ public class BufferPool {
                 long timeout = new Random().nextInt(2000) + 1000;
         
                 while(!lockAttained){
-                    lonf now = System.currentTimeMillis():
+                    long now = System.currentTimeMillis():
                     if(now-start > timeout){
                         throw new TransactionAbortedException();
                     }
