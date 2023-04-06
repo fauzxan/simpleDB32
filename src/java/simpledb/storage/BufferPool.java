@@ -5,6 +5,7 @@ import simpledb.common.Permissions;
 import simpledb.common.DbException;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+import simpledb.common.LockManager;
 
 import java.io.*;
 import java.util.Iterator;
@@ -29,6 +30,8 @@ public class BufferPool {
     /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
     private final LockManager lockManager;
+    // The transaction needs to wait when it cannot acquire a lock. Since sleep is used to represent the waiting, the parameter here refers to the time to sleep.
+    private final long SLEEP;
 
     /**
      * Frame contains the following:
@@ -90,6 +93,7 @@ public class BufferPool {
         this.cache = new ConcurrentHashMap<PageId, Page>(); // Creates a new Cache
         this.LRUCache = new ConcurrentHashMap<PageId, Frame>(); // Creates a new LRU cache, need to replace the cache above
         lockManager = new LockManager();
+        this.SLEEP = 500;
     }
 
     public static int getPageSize() {
@@ -121,9 +125,17 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException{
-         
+    public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException, InterruptedException {
 
+        boolean result = (perm == Permissions.READ_ONLY) ? lockManager.grant_shared_lock(tid, pid)
+                : lockManager.grant_exclusive_lock(tid, pid);
+       //The following while loop simulates the waiting process by checking if the lock has been acquired at certain intervals. If it has not been acquired, it checks for any potential deadlock.
+        while (!result) {
+            Thread.sleep(SLEEP);
+            //After the sleep, result is checked again.
+            result = (perm == Permissions.READ_ONLY) ? lockManager.grant_shared_lock(tid, pid)
+                    : lockManager.grant_exclusive_lock(tid, pid);
+        }
 
         //Lab-1 Exercise 3
         if (this.LRUCache.containsKey(pid)) {
@@ -159,8 +171,13 @@ public class BufferPool {
      * @param pid the ID of the page to unlock
      */
     public  void unsafeReleasePage(TransactionId tid, PageId pid) {
-        // some code goes here
+       // some code goes here
         // not necessary for lab1|lab2
+        if (!lockManager.unlock(tid, pid)) {
+            //pid does not locked by any transaction
+            //or tid  dose not lock the page pid
+            throw new IllegalArgumentException();
+        }
     }
 
     /**
@@ -177,7 +194,9 @@ public class BufferPool {
     public boolean holdsLock(TransactionId tid, PageId p) {
         // some code goes here
         // not necessary for lab1|lab2
-        return false;
+         // some code goes here
+        // not necessary for lab1|lab2
+        return lockManager.getLockState(tid, p) != null;
     }
 
     /**
