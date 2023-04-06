@@ -28,13 +28,14 @@ import java.io.IOException;
 public class BufferPool {
     /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
-    private final LockManager lockManager;
 
     /**
      * Frame contains the following:
      * @param timeStamp that indicates the time at which the page was last put in the buffer pool. Keep in mind that the
      *                  timeStamp refers to the last used time. Thus, the timestamp must be set only when unpinning.
      */
+
+
     private class Frame{
         private long timeStamp;
         private int pincount;
