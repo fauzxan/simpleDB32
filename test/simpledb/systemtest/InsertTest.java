@@ -19,42 +19,50 @@ import simpledb.transaction.TransactionId;
 public class InsertTest extends SimpleDbTestBase {
     private void validateInsert(int columns, int sourceRows, int destinationRows)
                 throws DbException, IOException, TransactionAbortedException {
-        // Create the two tables
-        List<List<Integer>> sourceTuples = new ArrayList<>();
-        HeapFile source = SystemTestUtil.createRandomHeapFile(
-                columns, sourceRows, null, sourceTuples);
-        assert sourceTuples.size() == sourceRows;
-        List<List<Integer>> destinationTuples = new ArrayList<>();
-        HeapFile destination = SystemTestUtil.createRandomHeapFile(
-                columns, destinationRows, null, destinationTuples);
-        assert destinationTuples.size() == destinationRows;
 
-        // Insert source into destination
-        TransactionId tid = new TransactionId();
-        SeqScan ss = new SeqScan(tid, source.getId(), "");
-        Insert insOp = new Insert(tid, ss, destination.getId());
+
+        long start = System.currentTimeMillis();
+        long end = start + 1000;
+        while (System.currentTimeMillis() < end) {
+            // Some expensive operation on the item.
+            // Create the two tables
+            List<List<Integer>> sourceTuples = new ArrayList<>();
+            HeapFile source = SystemTestUtil.createRandomHeapFile(
+                    columns, sourceRows, null, sourceTuples);
+            assert sourceTuples.size() == sourceRows;
+            List<List<Integer>> destinationTuples = new ArrayList<>();
+            HeapFile destination = SystemTestUtil.createRandomHeapFile(
+                    columns, destinationRows, null, destinationTuples);
+            assert destinationTuples.size() == destinationRows;
+
+            // Insert source into destination
+            TransactionId tid = new TransactionId();
+            SeqScan ss = new SeqScan(tid, source.getId(), "");
+            Insert insOp = new Insert(tid, ss, destination.getId());
 
 //        Query q = new Query(insOp, tid);
-        insOp.open();
-        boolean hasResult = false;
-        while (insOp.hasNext()) {
-            Tuple tup = insOp.next();
-            assertFalse(hasResult);
-            hasResult = true;
-            assertEquals(SystemTestUtil.SINGLE_INT_DESCRIPTOR, tup.getTupleDesc());
-            assertEquals(sourceRows, ((IntField) tup.getField(0)).getValue());
+            insOp.open();
+            boolean hasResult = false;
+            while (insOp.hasNext()) {
+                Tuple tup = insOp.next();
+                assertFalse(hasResult);
+                hasResult = true;
+                assertEquals(SystemTestUtil.SINGLE_INT_DESCRIPTOR, tup.getTupleDesc());
+                assertEquals(sourceRows, ((IntField) tup.getField(0)).getValue());
+            }
+            assertTrue(hasResult);
+            insOp.close();
+
+            // As part of the same transaction, scan the table
+            sourceTuples.addAll(destinationTuples);
+            SystemTestUtil.matchTuples(destination, tid, sourceTuples);
+
+            // As part of a different transaction, scan the table
+            Database.getBufferPool().transactionComplete(tid);
+            Database.getBufferPool().flushAllPages();
+            SystemTestUtil.matchTuples(destination, sourceTuples);
         }
-        assertTrue(hasResult);
-        insOp.close();
 
-        // As part of the same transaction, scan the table
-        sourceTuples.addAll(destinationTuples);
-        SystemTestUtil.matchTuples(destination, tid, sourceTuples);
-
-        // As part of a different transaction, scan the table
-        Database.getBufferPool().transactionComplete(tid);
-        Database.getBufferPool().flushAllPages();
-        SystemTestUtil.matchTuples(destination, sourceTuples);
     }
 
     @Test public void testEmptyToEmpty()
