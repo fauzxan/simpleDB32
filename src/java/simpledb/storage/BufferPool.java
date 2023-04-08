@@ -201,6 +201,7 @@ public class BufferPool{
     public void transactionComplete(TransactionId tid) {
         // some code goes here
         // not necessary for lab1|lab2
+        transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
@@ -219,32 +220,38 @@ public class BufferPool{
      * @param tid the ID of the transaction requesting the unlock
      * @param commit a flag indicating whether we should commit or abort
      */
-    public void transactionComplete(TransactionId tid, boolean commit) {
+    public void transactionComplete(TransactionId tid, boolean commit){
         // some code goes here
         // not necessary for lab1|lab2
+        lockManager.releaseTransactionLocks(tid);
+        
         if(commit){
+            try{
             flushPages(tid);
+        }catch (IOException e){
+           System.out.println("IOException thrown | BufferPool.java | transactionComplete(tid,commit)");
+        }
         }else{
             restorePages(tid);
         }
 
-        for(PageId pid : LRUCache.keySet()){
-            if(holdsLock(tid,pid)){
-                unsafeReleasePage(tid,pid);
-            }
-        }
+        // for(PageId pid : LRUCache.keySet()){
+        //     if(holdsLock(tid,pid)){
+        //         unsafeReleasePage(tid,pid);
+        //     }
+        // }
     }
 
     private synchronized void restorePages(TransactionId tid){
         for(PageId pid : LRUCache.keySet()){
-            Page page = LRUCache.get(pid);
+            Page page = LRUCache.get(pid).getPage();
 
             if(page.isDirty() == tid){
                 int tabID = pid.getTableId();
                 DbFile file = Database.getCatalog().getDatabaseFile(tabID);
                 Page pageFromDisk = file.readPage(pid);
 
-                LRUCache.put(pid, pageFromDisk);
+                LRUCache.put(pid, new Frame(pageFromDisk));
             }
         }
     }
@@ -363,6 +370,7 @@ public class BufferPool{
         Page page = this.LRUCache.get(pid).getPage();
         int tableId = ((HeapPageId)pid).getTableId();
         HeapFile hpf = (HeapFile)Database.getCatalog().getDatabaseFile(tableId);
+        
         hpf.writePage(page);
         page.markDirty(false, null);
         this.LRUCache.remove(pid);
@@ -375,9 +383,10 @@ public class BufferPool{
         // some code goes here
         // not necessary for lab1|lab2
         for(PageId pid : LRUCache.keySet()){
-            Page page = LRUCache.get(pid);
+            Page page = LRUCache.get(pid).getPage();
             if(page.isDirty() == tid){
                 flushPage(pid);
+                this.LRUCache.get(pid).unpinFrame();
             }
         }
     }
