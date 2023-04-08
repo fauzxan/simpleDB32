@@ -154,12 +154,14 @@ public class LockManager {
     }
 
     //Release all locks held by transaction tid.
-    public synchronized void releaseTransactionLocks(TransactionId tid) {
+    public synchronized List<PageId> releaseTransactionLocks(TransactionId tid) {
         //This method first finds all the locks that belong to tid and then releases them
         List<PageId> toRelease = getAllLocksByTid(tid);
         for (PageId pid : toRelease) {
             unlock(tid, pid);
+
         }
+        return toRelease;
 //        this.dependencyGraph.remove(tid);
     }
 

@@ -223,8 +223,10 @@ public class BufferPool{
     public void transactionComplete(TransactionId tid, boolean commit){
         // some code goes here
         // not necessary for lab1|lab2
-        lockManager.releaseTransactionLocks(tid);
-        
+        List<PageId> toUnpin = lockManager.releaseTransactionLocks(tid);
+        for (PageId pid : toUnpin) {
+            this.LRUCache.get(pid).unpinFrame();
+        }
         if(commit){
             try{
             flushPages(tid);
@@ -370,7 +372,7 @@ public class BufferPool{
         Page page = this.LRUCache.get(pid).getPage();
         int tableId = ((HeapPageId)pid).getTableId();
         HeapFile hpf = (HeapFile)Database.getCatalog().getDatabaseFile(tableId);
-        
+
         hpf.writePage(page);
         page.markDirty(false, null);
         this.LRUCache.remove(pid);
@@ -386,7 +388,6 @@ public class BufferPool{
             Page page = LRUCache.get(pid).getPage();
             if(page.isDirty() == tid){
                 flushPage(pid);
-                this.LRUCache.get(pid).unpinFrame();
             }
         }
     }
