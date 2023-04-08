@@ -139,9 +139,8 @@ public class HeapFile implements DbFile {
         int pg=0;
         while(pg<this.numPages()){
             pid = new HeapPageId(getId(), pg);
-            page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_ONLY);
+            page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
             if(page.getNumEmptySlots()>0) {
-                page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
                 page.insertTuple(t);
 //                page.markDirty(true, tid);
                 break;
