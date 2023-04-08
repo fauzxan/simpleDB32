@@ -5,6 +5,7 @@ import simpledb.common.Permissions;
 import simpledb.common.DbException;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+import simpledb.common.LockManager;
 
 import java.io.*;
 import java.util.Iterator;
@@ -12,6 +13,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
 import java.io.IOException;
+
+
 
 
 /**
@@ -25,10 +28,12 @@ import java.io.IOException;
  *
  * @Threadsafe, all fields are final
  */
-public class BufferPool {
+public class BufferPool{
     /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
     private final LockManager lockManager;
+    // The transaction needs to wait when it cannot acquire a lock. Since sleep is used to represent the waiting, the parameter here refers to the time to sleep.
+    private final long SLEEP;
 
     /**
      * Frame contains the following:
@@ -42,7 +47,7 @@ public class BufferPool {
         public Frame(Page page){
             this.page = page;
             // this.timeStamp = System.currentTimeMillis(); // TimeStamp must only be initialized upon unpinning.
-            this.pincount = 1;
+            this.pincount = 0;
         }
         public long getTimeStamp(){
             return this.timeStamp;
@@ -90,6 +95,7 @@ public class BufferPool {
         this.cache = new ConcurrentHashMap<PageId, Page>(); // Creates a new Cache
         this.LRUCache = new ConcurrentHashMap<PageId, Frame>(); // Creates a new LRU cache, need to replace the cache above
         lockManager = new LockManager();
+        this.SLEEP = 500;
     }
 
     public static int getPageSize() {
@@ -121,37 +127,35 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException{
-         
-                //Aditya Version L3Ex5//
-                int lockType;
-                if(perm == Permissions.READ_ONLY){
-                    lockType = 0;
-                }
-                else{
-                    lockType = 1;
-                }
-                boolean lockAttained = false;
-                long start = System.currentTimeMillis();
-                long timeout = new Random().nextInt(2000) + 1000;
-        
-                while(!lockAttained){
-                    long now = System.currentTimeMillis();
-                    if(now-start > timeout){
-                        throw new TransactionAbortedException();
-                    }
-                    lockAttained = lockManager.acquireLock(pid, tid, lockType);
-                }
-                //Aditya Version L3Ex5//
+    public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException, TransactionAbortedException {
+
+        boolean result = (perm == Permissions.READ_ONLY) ? lockManager.grant_shared_lock(tid, pid)
+                : lockManager.grant_exclusive_lock(tid, pid);
+       //The following while loop simulates the waiting process by checking if the lock has been acquired at certain intervals. If it has not been acquired, it checks for any potential deadlock.
+        while (!result) {
+            try {
+                Thread.sleep(SLEEP);
+
+            }catch(InterruptedException e){
+                System.out.println("Thread.sleep(SLEEP) was interrupted| BufferPool.java | getPage(tid, pid, perm)");
+            }
+            //After the sleep, result is checked again.
+            boolean deadlocks = lockManager.periodicCall();
+            if (deadlocks == true){
+                throw new TransactionAbortedException("Deadlock was detected! | BufferPool.java | getPage()");
+            }
+            result = (perm == Permissions.READ_ONLY) ? lockManager.grant_shared_lock(tid, pid)
+                    : lockManager.grant_exclusive_lock(tid, pid);
+        }
 
         //Lab-1 Exercise 3
         if (this.LRUCache.containsKey(pid)) {
+            this.LRUCache.get(pid).pinFrame();
             return this.LRUCache.get(pid).getPage();
         }
         else {
             // Writes the page onto cache and returns it
             if (this.LRUCache.size() == this.numPages){
-                // Page eviction policy needs to be implemented
 
                 this.evictPage(); // if the eviction is not possible due to NO STEAL, then a DbException will be thrown
                 // at evictPage() and no new pages will be added to the buffer pool
@@ -162,6 +166,8 @@ public class BufferPool {
                 Page newPage = dbfile.readPage(pid);
                 Frame newFrame = new Frame(newPage);
                 this.LRUCache.put(pid, newFrame);
+                this.LRUCache.get(pid).pinFrame();
+//                System.out.println("The following page has been pinned:"+pid);
                 return newPage;
             }
             return null;
@@ -178,8 +184,13 @@ public class BufferPool {
      * @param pid the ID of the page to unlock
      */
     public  void unsafeReleasePage(TransactionId tid, PageId pid) {
-        // some code goes here
+       // some code goes here
         // not necessary for lab1|lab2
+        if (!lockManager.unlock(tid, pid)) {
+            //pid does not locked by any transaction
+            //or tid  dose not lock the page pid
+            throw new IllegalArgumentException();
+        }
     }
 
     /**
@@ -190,14 +201,15 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) {
         // some code goes here
         // not necessary for lab1|lab2
-        transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
     public boolean holdsLock(TransactionId tid, PageId p) {
         // some code goes here
         // not necessary for lab1|lab2
-        return false;
+         // some code goes here
+        // not necessary for lab1|lab2
+        return lockManager.getLockState(tid, p) != null;
     }
 
     /**
@@ -382,6 +394,7 @@ public class BufferPool {
         double minTS = Double.POSITIVE_INFINITY; // keep track of the minimum timestamp
         for (PageId pageId: this.LRUCache.keySet()){
             Frame f = this.LRUCache.get(pageId);
+            System.out.println(f.getPincount());
             if (f.getPage().isDirty() == null &&
                     (double) f.getTimeStamp() < minTS &&
                     f.getPincount() == 0
@@ -391,11 +404,17 @@ public class BufferPool {
                 minTS = (double) f.getTimeStamp();
             }
         }
+
         if (minTS != Double.POSITIVE_INFINITY && minTSPageId != null){
             try{
                 this.flushPage(minTSPageId);
             }catch(IOException e){
                 System.out.println("IOException thrown when trying to flushPage() | BufferPool.java | evictPage()");
+            }
+            finally{
+                if (!this.LRUCache.containsKey(minTSPageId)){
+                    System.out.println("Page has been flushed successfully | BufferPool.java | evictPage()");
+                }
             }
         }
         else{
