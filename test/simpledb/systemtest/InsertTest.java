@@ -21,9 +21,7 @@ public class InsertTest extends SimpleDbTestBase {
                 throws DbException, IOException, TransactionAbortedException {
 
 
-        long start = System.currentTimeMillis();
-        long end = start + 1000;
-        while (System.currentTimeMillis() < end) {
+
             // Some expensive operation on the item.
             // Create the two tables
             List<List<Integer>> sourceTuples = new ArrayList<>();
@@ -61,7 +59,6 @@ public class InsertTest extends SimpleDbTestBase {
             Database.getBufferPool().transactionComplete(tid);
             Database.getBufferPool().flushAllPages();
             SystemTestUtil.matchTuples(destination, sourceTuples);
-        }
 
     }
 

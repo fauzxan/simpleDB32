@@ -2406,7 +2406,6 @@ simpledb.storage.HeapPage
 simpledb.systemtest.SimpleDbTestBase
 simpledb.common.DbException
 simpledb.execution.Insert
-java.lang.System
 junit.framework.JUnit4TestAdapter
 simpledb.storage.Tuple
 simpledb.storage.IntField
