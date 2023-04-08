@@ -250,7 +250,7 @@ public class HeapFile implements DbFile {
                     }
                 }
                 catch(Exception e){
-                    throw new NoSuchElementException();
+                    throw new NoSuchElementException("No more tuples in HeapFile | HeapFile.java | next()");
                 }
                 throw new NoSuchElementException();
             }

@@ -129,8 +129,13 @@ public class BufferPool{
      */
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException, TransactionAbortedException {
 
+
         boolean result = (perm == Permissions.READ_ONLY) ? lockManager.grant_shared_lock(tid, pid)
                 : lockManager.grant_exclusive_lock(tid, pid);
+        boolean deadlocks = lockManager.periodicCall();
+        if (deadlocks == true){
+            throw new TransactionAbortedException("Deadlock was detected! | BufferPool.java | getPage()");
+        }
        //The following while loop simulates the waiting process by checking if the lock has been acquired at certain intervals. If it has not been acquired, it checks for any potential deadlock.
         while (!result) {
             try {
@@ -140,7 +145,7 @@ public class BufferPool{
                 System.out.println("Thread.sleep(SLEEP) was interrupted| BufferPool.java | getPage(tid, pid, perm)");
             }
             //After the sleep, result is checked again.
-            boolean deadlocks = lockManager.periodicCall();
+            deadlocks = lockManager.periodicCall();
             if (deadlocks == true){
                 throw new TransactionAbortedException("Deadlock was detected! | BufferPool.java | getPage()");
             }

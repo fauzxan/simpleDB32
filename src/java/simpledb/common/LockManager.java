@@ -122,7 +122,9 @@ public class LockManager {
         list.add(nls);
         lockStateMap.put(pid, list);
         waiting_map.remove(tid);
-
+        System.out.println("Lock has been granted to a transaction successfully! | LockManager.java | lock(pid, tid, perm)");
+        System.out.println(pid);
+        System.out.println(perm);
         return true;
     }
 
@@ -134,6 +136,8 @@ public class LockManager {
 //            this.dependencyGraph.insert(source, lockStateList.get(1));
 //        }
         waiting_map.put(tid, pid);
+        System.out.println("A transaction has been put into waitList | LockManager.java | wait(tid, pid)");
+
         return false;
     }
 
@@ -149,7 +153,7 @@ public class LockManager {
         if (ls == null) return false;
         list.remove(ls);
         lockStateMap.put(pid, list);
-//        this.dependencyGraph.remove(tid);
+
         return true;
     }
 

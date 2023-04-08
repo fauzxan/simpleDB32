@@ -125,7 +125,7 @@ public class SeqScan implements OpIterator {
         if (td != null){
             for (int i=0; i<td.numFields(); i++){
                 typeArr[i] = td.getFieldType(i);
-                fieldArr[i] = this.tableAlias+"."+td.getFieldName(i);
+                fieldArr[i] = td.getFieldName(i);
             }
             return new TupleDesc(typeArr, fieldArr);
         }
