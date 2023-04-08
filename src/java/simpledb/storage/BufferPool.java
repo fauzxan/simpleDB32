@@ -217,7 +217,7 @@ public class BufferPool {
                 restorePages(tid);
             }
 
-            for(PageId pid : cache.keySet()){
+            for(PageId pid : LRUCache.keySet()){
                 if(holdsLock(tid,pid)){
                     unsafeReleasePage(tid,pid):
                 }
@@ -226,15 +226,15 @@ public class BufferPool {
     }
 
     private synchronized void restorePages(TransactionId tid){
-        for(PageId pid ; cache.keySet()){
-            Page page = cache.get(pid);
+        for(PageId pid ; LRUCache.keySet()){
+            Page page = LRUCache.get(pid);
 
             if(page.isDirty() == tid){
                 int tabID = pid.getTableId();
                 DbFile file = Database.getCatalog().getDatabaseFile(tabID);
                 Page pageFromDisk = file.readPage(pid);
 
-                cache.put(pid, pageFromDisk);
+                LRUCache.put(pid, pageFromDisk);
             }
         }
     }
@@ -364,8 +364,8 @@ public class BufferPool {
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
-        for(PageId pid : cache.keySet()){
-            Page page = cache.get(pid);
+        for(PageId pid : LRUCache.keySet()){
+            Page page = LRUCache.get(pid);
             if(page.isDirty() == tid){
                 flushPage(pid);
             }
