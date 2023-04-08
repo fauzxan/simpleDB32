@@ -124,7 +124,7 @@ public class LockManager {
         waiting_map.remove(tid);
         System.out.println("Lock has been granted to a transaction successfully! | LockManager.java | lock(pid, tid, perm)");
         System.out.println(pid);
-        System.out.println(perm);
+//        System.out.println(perm);
         return true;
     }
 
@@ -147,7 +147,10 @@ public class LockManager {
     // Instead, you should unlock first and then determine if it exists based on the return
     public synchronized boolean unlock(TransactionId tid, PageId pid) {
         ArrayList<LockState> list = (ArrayList<LockState>) lockStateMap.get(pid);
-
+        for (LockState ls: list){
+            System.out.println("INSIDE UNLOCK");
+            System.out.println(ls.getPerm());
+        }
         if (list == null || list.size() == 0) return false;
         LockState ls = getLockState(tid, pid);
         if (ls == null) return false;
@@ -162,6 +165,7 @@ public class LockManager {
         //This method first finds all the locks that belong to tid and then releases them
         List<PageId> toRelease = getAllLocksByTid(tid);
         for (PageId pid : toRelease) {
+            System.out.println("The line that never gets called");
             unlock(tid, pid);
 
         }

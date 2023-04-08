@@ -223,7 +223,9 @@ public class Delete extends Operator {
                 Database.getBufferPool().deleteTuple(tid, t);
                 tupleDeleted += 1;
             } catch (DbException e){
-                throw new DbException("fail to delete");
+                throw new DbException("Failed to delete | Delete.java | fetchNext()");
+            }catch (TransactionAbortedException e2){
+                throw new TransactionAbortedException("Failed to delete | Delete.java | fetchNext()");
             }
         }
         num_tuple.setField(0, new IntField(tupleDeleted));

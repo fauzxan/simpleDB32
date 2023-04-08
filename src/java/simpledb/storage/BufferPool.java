@@ -229,14 +229,18 @@ public class BufferPool{
         // some code goes here
         // not necessary for lab1|lab2
         List<PageId> toUnpin = lockManager.releaseTransactionLocks(tid);
-        for (PageId pid : toUnpin) {
-            this.LRUCache.get(pid).unpinFrame();
+        for (PageId pid : toUnpin) {// unpin all the pages that the transaction previously pinned
+            System.out.println(pid);
+            if (LRUCache.containsKey(pid)){
+                this.LRUCache.get(pid).unpinFrame();
+                System.out.println("UNPINNED SOMETHING!");
+            }
         }
         if(commit){
             try{
             flushPages(tid);
         }catch (IOException e){
-           System.out.println("IOException thrown | BufferPool.java | transactionComplete(tid,commit)");
+           System.out.println("IOException thrown due to flushPages| BufferPool.java | transactionComplete(tid,commit)");
         }
         }else{
             restorePages(tid);
@@ -291,6 +295,7 @@ public class BufferPool{
             }
 
             if (this.LRUCache.size() == this.numPages) {
+                System.out.println("Cache size reached a maximum, attempting page eviction now... | BufferPool.java |  ");
                 this.evictPage();
             }
             else{
@@ -330,6 +335,7 @@ public class BufferPool{
                 page.markDirty(true, tid);
             }
             if (this.LRUCache.size() == this.numPages) {
+                System.out.println("Cache size reached a maximum, attempting page eviction now... | BufferPool.java |  ");
                 this.evictPage();
             }
             Frame frame = new Frame(page);
@@ -409,8 +415,11 @@ public class BufferPool{
         double minTS = Double.POSITIVE_INFINITY; // keep track of the minimum timestamp
         for (PageId pageId: this.LRUCache.keySet()){
             Frame f = this.LRUCache.get(pageId);
+            System.out.println(f.getPage().isDirty());
+            System.out.println(f.getTimeStamp());
             System.out.println(f.getPincount());
-            if (f.getPage().isDirty() == null &&
+            if (
+                    f.getPage().isDirty() == null &&
                     (double) f.getTimeStamp() < minTS &&
                     f.getPincount() == 0
                     // must not be dirty, must have TS < minTS, must have pincount == 0

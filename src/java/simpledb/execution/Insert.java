@@ -302,13 +302,13 @@ public class Insert extends Operator {
         // some code goes here
         TupleDesc table_td = Database.getCatalog().getTupleDesc(tableId);
         TupleDesc opit_td = child.getTupleDesc();
-        System.out.println("Child td:");
-        System.out.println(opit_td);
-
-        System.out.println("Catalog td:");
-        System.out.println(table_td);
-        if (!opit_td.equals(table_td))
-            throw new DbException("tupledesc mismatch");
+//        System.out.println("Child td:");
+//        System.out.println(opit_td);
+//
+//        System.out.println("Catalog td:");
+//        System.out.println(table_td);
+//        if (!opit_td.equals(table_td))
+//            throw new DbException("tupledesc mismatch");
 
         this.tid = tid;
         this.child = child;

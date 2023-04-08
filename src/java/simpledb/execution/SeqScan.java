@@ -122,14 +122,14 @@ public class SeqScan implements OpIterator {
         TupleDesc td = Database.getCatalog().getTupleDesc(this.tableid);
         Type[] typeArr = new Type[td.numFields()];
         String[] fieldArr = new String[td.numFields()];
-        if (td != null){
+        try{
             for (int i=0; i<td.numFields(); i++){
                 typeArr[i] = td.getFieldType(i);
-                fieldArr[i] = td.getFieldName(i);
+                fieldArr[i] = this.tableAlias + "." +td.getFieldName(i);
             }
             return new TupleDesc(typeArr, fieldArr);
         }
-        else{
+        catch(Exception e){
             throw new NoSuchElementException("Could not get tuple desc while seqScanning, or it is empty | SeqScan.java | getTupleDesc()");
         }
     }
