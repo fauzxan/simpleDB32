@@ -210,17 +210,15 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid, boolean commit) {
         // some code goes here
         // not necessary for lab1|lab2
-        throws IOException{
-            if(commit){
-                flushPages(tid);
-            }else{
-                restorePages(tid);
-            }
+        if(commit){
+            flushPages(tid);
+        }else{
+            restorePages(tid);
+        }
 
-            for(PageId pid : LRUCache.keySet()){
-                if(holdsLock(tid,pid)){
-                    unsafeReleasePage(tid,pid);
-                }
+        for(PageId pid : LRUCache.keySet()){
+            if(holdsLock(tid,pid)){
+                unsafeReleasePage(tid,pid);
             }
         }
     }
