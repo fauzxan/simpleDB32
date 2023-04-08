@@ -136,7 +136,7 @@ public class BufferPool {
                 long timeout = new Random().nextInt(2000) + 1000;
         
                 while(!lockAttained){
-                    long now = System.currentTimeMillis():
+                    long now = System.currentTimeMillis();
                     if(now-start > timeout){
                         throw new TransactionAbortedException();
                     }
@@ -210,7 +210,7 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid, boolean commit) {
         // some code goes here
         // not necessary for lab1|lab2
-        throws IOException {
+        throws IOException{
             if(commit){
                 flushPages(tid);
             }else{
@@ -219,14 +219,14 @@ public class BufferPool {
 
             for(PageId pid : LRUCache.keySet()){
                 if(holdsLock(tid,pid)){
-                    unsafeReleasePage(tid,pid):
+                    unsafeReleasePage(tid,pid);
                 }
             }
         }
     }
 
     private synchronized void restorePages(TransactionId tid){
-        for(PageId pid ; LRUCache.keySet()){
+        for(PageId pid : LRUCache.keySet()){
             Page page = LRUCache.get(pid);
 
             if(page.isDirty() == tid){
