@@ -4,9 +4,13 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.FileHandler;
 
 import simpledb.transaction.TransactionId;
 import simpledb.storage.PageId;
+import simpledb.common.LogStuff;
+
 
 
 
@@ -14,9 +18,13 @@ import simpledb.storage.PageId;
 
 public class DependencyGraph{
     private ConcurrentHashMap<TransactionId, ArrayList<TransactionId>> adjacencyList;
+    private LogStuff logger;
 
     public DependencyGraph(){
         this.adjacencyList = new ConcurrentHashMap<TransactionId, ArrayList<TransactionId>>();
+        try{
+            this.logger = new LogStuff("DependencyGraph");
+        }catch(Exception e){}
     }
 
     private void insert(TransactionId source, TransactionId destination){
@@ -48,14 +56,21 @@ public class DependencyGraph{
         //get list of pages with only one transaction accessing it, and it has READ_WRITE permission.
         ConcurrentHashMap<PageId, TransactionId> singles = new ConcurrentHashMap<PageId, TransactionId>();
         for (PageId pid: lockStateMap.keySet()){
-            if (lockStateMap.get(pid).size() == 1 && lockStateMap.get(pid).get(1).getPerm() == Permissions.READ_WRITE){
+
+            if (lockStateMap.get(pid).size() == 1 && lockStateMap.get(pid).get(0).getPerm() == Permissions.READ_WRITE){
                 singles.put(pid, lockStateMap.get(pid).get(1).getTid());
+//                singles
             }
         }
 
         //create adjacency list with the singles list just created and the waitlist received from above.
         for (TransactionId tid: waitList.keySet()){
-            this.insert(tid, singles.get(waitList.get(tid)));
+            TransactionId source = tid;
+            PageId destinationPid = waitList.get(tid);
+            if (singles.containsKey(destinationPid)) {
+                TransactionId destination = singles.get(waitList.get(tid));
+                this.insert(tid, singles.get(waitList.get(tid)));
+            }
         }
 
         HashSet<TransactionId> explored = new HashSet<TransactionId>();
