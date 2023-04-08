@@ -5,6 +5,7 @@ import simpledb.common.Permissions;
 import simpledb.common.DbException;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+import simpledb.transaction.lockManager;
 
 import java.io.*;
 import java.util.Iterator;
