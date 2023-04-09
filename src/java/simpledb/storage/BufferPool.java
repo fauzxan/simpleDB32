@@ -116,7 +116,7 @@ public class BufferPool{
         return this.LRUCache;
     }
 
-    public void setCache(ConcurrentHashMap<PageId, Page> newCache) {
+    public void setCache(ConcurrentHashMap<PageId, Frame> newCache) {
         this.LRUCache = newCache;
     }
 
