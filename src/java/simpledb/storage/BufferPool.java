@@ -437,9 +437,9 @@ public class BufferPool{
             System.out.println(f.getTimeStamp());
             System.out.println(f.getPincount());
             if (
-                    f.getPage().isDirty() == null &&
-                    (double) f.getTimeStamp() < minTS &&
-                    f.getPincount() == 0
+                    f.getPage().isDirty() == null
+//                    (double) f.getTimeStamp() < minTS &&
+//                    f.getPincount() == 0
                     // must not be dirty, must have TS < minTS, must have pincount == 0
             ){
                 minTSPageId = pageId;

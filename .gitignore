@@ -24,3 +24,6 @@ hs_err_pid*
 bin/depcache/dependencies.txt
 bin/depcache/dependencies.txt
 logs
+*.properties
+*.txt
+log
