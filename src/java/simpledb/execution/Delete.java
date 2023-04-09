@@ -65,7 +65,12 @@ public class Delete extends Operator {
         hasEntered = false;
         while (child.hasNext()) {
             Tuple next = child.next();
-            Database.getBufferPool().deleteTuple(tid, next);
+            try{
+                Database.getBufferPool().deleteTuple(tid, next);
+            }catch(DbException db){
+
+            }catch(TransactionAbortedException ta){}
+            catch(IOException io){}
             count++;
         }
     }

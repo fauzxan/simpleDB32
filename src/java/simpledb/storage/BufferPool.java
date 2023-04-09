@@ -1,21 +1,15 @@
 package simpledb.storage;
 
-import simpledb.common.Database;
-import simpledb.common.Permissions;
-import simpledb.common.DbException;
+import simpledb.common.*;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-import simpledb.common.LockManager;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.ArrayList;
-import java.io.IOException;
-
-
-
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -28,61 +22,28 @@ import java.io.IOException;
  *
  * @Threadsafe, all fields are final
  */
-public class BufferPool{
+public class BufferPool {
+
+    LockManager lockManager;
+
+    /** Mapping of all pages being used **/
+    private LinkedHashMap<PageId, Page> pageMap;
+
+    /** Number of pages as passed to constructor **/
+    private int maxPages;
+
     /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
-    private final LockManager lockManager;
-    // The transaction needs to wait when it cannot acquire a lock. Since sleep is used to represent the waiting, the parameter here refers to the time to sleep.
-    private final long SLEEP;
-
-    /**
-     * Frame contains the following:
-     * @param timeStamp that indicates the time at which the page was last put in the buffer pool. Keep in mind that the
-     *                  timeStamp refers to the last used time. Thus, the timestamp must be set only when unpinning.
-     */
-    private class Frame{
-        private long timeStamp;
-        private int pincount;
-        private Page page;
-        public Frame(Page page){
-            this.page = page;
-            // this.timeStamp = System.currentTimeMillis(); // TimeStamp must only be initialized upon unpinning.
-            this.pincount = 0;
-        }
-        public long getTimeStamp(){
-            return this.timeStamp;
-        }
-        public void pinFrame(){
-            this.pincount ++;
-        }
-
-        public void unpinFrame(){
-            if (this.pincount != 0){
-                this.pincount --;
-            }
-            this.timeStamp = System.currentTimeMillis();
-        }
-
-        public int getPincount() {
-            return this.pincount;
-        }
-
-        public Page getPage(){
-            return this.page;
-        }
-    }
-
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
+
+    /** To iterate through pages for evicting pages */
+    Iterator<PageId> pageIter = null;
 
     /** Default number of pages passed to the constructor. This is used by
      other classes. BufferPool should use the numPages argument to the
      constructor instead. */
     public static final int DEFAULT_PAGES = 50;
-    private ConcurrentHashMap<PageId, Page> cache;
-    private ConcurrentHashMap<PageId, Frame> LRUCache;
-    private int numPages;
-
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -90,12 +51,10 @@ public class BufferPool{
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        //Lab-1 Exercise 3
-        this.numPages = numPages; // Max Pages that can be cached
-        this.cache = new ConcurrentHashMap<PageId, Page>(); // Creates a new Cache
-        this.LRUCache = new ConcurrentHashMap<PageId, Frame>(); // Creates a new LRU cache, need to replace the cache above
-        lockManager = new LockManager();
-        this.SLEEP = 500;
+        // some code goes here
+        this.pageMap = new LinkedHashMap<>(numPages);
+        this.maxPages = numPages;
+        this.lockManager = new LockManager();
     }
 
     public static int getPageSize() {
@@ -127,51 +86,27 @@ public class BufferPool{
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm) throws DbException, TransactionAbortedException {
-
-        boolean result = (perm == Permissions.READ_ONLY) ? lockManager.grant_shared_lock(tid, pid)
-                : lockManager.grant_exclusive_lock(tid, pid);
-       //The following while loop simulates the waiting process by checking if the lock has been acquired at certain intervals. If it has not been acquired, it checks for any potential deadlock.
-        while (!result) {
-            try {
-                Thread.sleep(SLEEP);
-
-            }catch(InterruptedException e){
-                System.out.println("Thread.sleep(SLEEP) was interrupted| BufferPool.java | getPage(tid, pid, perm)");
-            }
-            //After the sleep, result is checked again.
-            boolean deadlocks = lockManager.periodicCall();
-            if (deadlocks == true){
-                throw new TransactionAbortedException("Deadlock was detected! | BufferPool.java | getPage()");
-            }
-            result = (perm == Permissions.READ_ONLY) ? lockManager.grant_shared_lock(tid, pid)
-                    : lockManager.grant_exclusive_lock(tid, pid);
+    public Page getPage(TransactionId tid, PageId pid, Permissions perm)
+            throws TransactionAbortedException, DbException {
+        // some code goes here
+        try{
+            lockManager.acquire(tid, pid, perm);
+        } catch(InterruptedException e){
+            e.printStackTrace();
         }
 
-        //Lab-1 Exercise 3
-        if (this.LRUCache.containsKey(pid)) {
-            this.LRUCache.get(pid).pinFrame();
-            return this.LRUCache.get(pid).getPage();
-        }
-        else {
-            // Writes the page onto cache and returns it
-            if (this.LRUCache.size() == this.numPages){
-
-                this.evictPage(); // if the eviction is not possible due to NO STEAL, then a DbException will be thrown
-                // at evictPage() and no new pages will be added to the buffer pool
-
+        //lookup
+        Page page =  pageMap.get(pid);
+        //add if new and space available
+        if (page==null){
+            if(pageMap.size()>=maxPages) {
+                evictPage();
             }
-            if (this.LRUCache.size() < this.numPages){
-                DbFile dbfile = Database.getCatalog().getDatabaseFile(pid.getTableId());
-                Page newPage = dbfile.readPage(pid);
-                Frame newFrame = new Frame(newPage);
-                this.LRUCache.put(pid, newFrame);
-                this.LRUCache.get(pid).pinFrame();
-//                System.out.println("The following page has been pinned:"+pid);
-                return newPage;
-            }
-            return null;
+            DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
+            page = file.readPage(pid);
+            pageMap.put(pid, page);
         }
+        return page;
     }
 
     /**
@@ -184,13 +119,9 @@ public class BufferPool{
      * @param pid the ID of the page to unlock
      */
     public  void unsafeReleasePage(TransactionId tid, PageId pid) {
-       // some code goes here
+        // some code goes here
         // not necessary for lab1|lab2
-        if (!lockManager.unlock(tid, pid)) {
-            //pid does not locked by any transaction
-            //or tid  dose not lock the page pid
-            throw new IllegalArgumentException();
-        }
+        lockManager.release(tid, pid);
     }
 
     /**
@@ -201,15 +132,15 @@ public class BufferPool{
     public void transactionComplete(TransactionId tid) {
         // some code goes here
         // not necessary for lab1|lab2
+        transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
-    public boolean holdsLock(TransactionId tid, PageId p) {
+    public boolean holdsLock(TransactionId tid, PageId pid) {
         // some code goes here
         // not necessary for lab1|lab2
-         // some code goes here
-        // not necessary for lab1|lab2
-        return lockManager.getLockState(tid, p) != null;
+        //TO CHECK >> a lock means any or something specific? - yours does check whether the page is locked so its fine
+        return lockManager.holdsLock(tid, pid);
     }
 
     /**
@@ -222,6 +153,32 @@ public class BufferPool{
     public void transactionComplete(TransactionId tid, boolean commit) {
         // some code goes here
         // not necessary for lab1|lab2
+
+        //supporting code still required here
+        try{
+            if (commit){
+                flushPages(tid);
+            }
+            else{
+                Iterator<PageId> page_iter = pageMap.keySet().iterator();
+                while (page_iter.hasNext()) {
+                    PageId pid = page_iter.next();
+                    Page p = pageMap.get(pid);
+                    if (p.isDirty() != null && p.isDirty().equals(tid)) {
+                        Page temp = p.getBeforeImage();
+                        pageMap.remove(pid);
+                        pageMap.put(pid, temp);
+                        // discardPage(pid);
+                        // getPage(tid, pid, Permissions.READ_ONLY);
+                    }
+                }
+            }
+        }
+        catch(Exception e){
+            ;
+        }
+        lockManager.releaseAll(tid);
+        // CHECK -> Should there be a set image for all the pages after committing them. If yes, should be here
 
     }
 
@@ -243,28 +200,19 @@ public class BufferPool{
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for
-        HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        List<Page> modpages = file.insertTuple(tid, t);
-
+        // not necessary for lab1
+        List<Page> modpages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
         for (Page page: modpages) {
-            if (page.isDirty() == null) {
-                page.markDirty(true, tid);
+            page.markDirty(true, tid);
+
+            if (pageMap.size() > maxPages) {
+                evictPage();
             }
 
-            if (this.LRUCache.size() == this.numPages) {
-                this.evictPage();
-            }
-            else{
-                Frame frame = new Frame(page);
-                this.LRUCache.put(page.getId(), frame);
-            }
+            pageMap.put(page.getId(), page);
         }
 
-
     }
-
-
 
     /**
      * Remove the specified tuple from the buffer pool.
@@ -279,26 +227,24 @@ public class BufferPool{
      * @param tid the transaction deleting the tuple.
      * @param t the tuple to delete
      */
-    public void deleteTuple(TransactionId tid, Tuple t)
-        throws DbException, TransactionAbortedException {
+    public  void deleteTuple(TransactionId tid, Tuple t)
+            throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
-
-        int tableId=t.getRecordId().getPageId().getTableId();
-        HeapFile table = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-        ArrayList<Page> modpages = table.deleteTuple(tid, t);
-        for (Page page : modpages) {
-            if (page.isDirty() == null) {
+        try {
+            int tableid = t.getRecordId().getPageId().getTableId();
+            List<Page> modpages = Database.getCatalog().getDatabaseFile(tableid).deleteTuple(tid, t);
+            for (Page page : modpages) {
+                //mark dirty and update in cache(bufferpool map)
                 page.markDirty(true, tid);
+                pageMap.put(page.getId(), page);
             }
-            if (this.LRUCache.size() == this.numPages) {
-                this.evictPage();
-            }
-            Frame frame = new Frame(page);
-            this.LRUCache.put(page.getId(), frame);
+        } catch(NullPointerException e){
+            throw new DbException("tuple not in any table");
         }
-
     }
+
+
     /**
      * Flush all dirty pages to disk.
      * NB: Be careful using this routine -- it writes dirty data to disk so will
@@ -307,11 +253,9 @@ public class BufferPool{
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
-        for(PageId pageId : this.LRUCache.keySet()){
-            flushPage(pageId);
+        for(PageId pid: pageMap.keySet()){
+            flushPage(pid);
         }
-
-
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -325,8 +269,7 @@ public class BufferPool{
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
-        // this is not implemented with eviction policy because this is required for recovery and B+ tree only
-        this.LRUCache.remove(pid);
+        pageMap.remove(pid);
     }
 
     /**
@@ -336,61 +279,93 @@ public class BufferPool{
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
-        Page page = this.LRUCache.get(pid).getPage();
-        int tableId = ((HeapPageId)pid).getTableId();
-        HeapFile hpf = (HeapFile)Database.getCatalog().getDatabaseFile(tableId);
-        hpf.writePage(page);
-        page.markDirty(false, null);
-        this.LRUCache.remove(pid);
+
+        if (!pageMap.containsKey(pid)){
+            return;
+        }
+
+        Page p = pageMap.get(pid);
+//        if (p.isDirty() == null){
+//            p.setBeforeImage();
+//            p.markDirty(false, null);
+//            return;
+//        }
+//
+//        DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
+//        file.writePage(p);
+//        p.setBeforeImage();
+//        p.markDirty(false, null);
+        if(p.isDirty()!=null){
+            Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(p);
+            p.markDirty(false,null);
+        }
     }
 
-    /** Write all pages of the specified transaction to disk
-     * @Fauzaan This should be part of FORCE policy; flushPages prolly be called from elsewhere.
+    /** Write all pages of the specified transaction to disk.
      */
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
 
+        Iterator<PageId> page_iter = pageMap.keySet().iterator();
+        while (page_iter.hasNext()) {
+
+            PageId pid = page_iter.next();
+            Page p = pageMap.get(pid);
+            if (p.isDirty() != null && p.isDirty().equals(tid)) {
+                flushPage(pid);
+            }
+        }
     }
 
     /**
      * Discards a page from the buffer pool.
      * Flushes the page to disk to ensure dirty pages are updated on disk.
-     * @Fauzaan Tries to see if
      */
-    private synchronized void evictPage() throws DbException {
+    private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
-        PageId minTSPageId = null; // keep track of the page with the minimum timestamp
-        double minTS = Double.POSITIVE_INFINITY; // keep track of the minimum timestamp
-        for (PageId pageId: this.LRUCache.keySet()){
-            Frame f = this.LRUCache.get(pageId);
-            System.out.println(f.getPincount());
-            if (f.getPage().isDirty() == null &&
-                    (double) f.getTimeStamp() < minTS &&
-                    f.getPincount() == 0
-                    // must not be dirty, must have TS < minTS, must have pincount == 0
-            ){
-                minTSPageId = pageId;
-                minTS = (double) f.getTimeStamp();
+
+        // pageIter = pageMap.keySet().iterator();
+
+        // while (pageIter.hasNext()) {
+        //     PageId pid = pageIter.next();
+        //     if (pageMap.get(pid).isDirty() == null) {
+        //         pageMap.remove(pid);
+        //         return;
+        //     }
+        //     try {
+        //         flushPage(pid);
+        //     } catch (IOException e) {
+        //         throw new DbException("Error during eviction");
+        //     }
+        //     pageMap.remove(pid);
+        //     return;
+        // }
+        // throw new DbException("All pages are dirty");
+
+        // Instead of just taking the first element in the list,
+        // we will iterate through the HashMap and find non dirty page
+        // Order of going through the pages is from first page added to the last page added
+        Iterator<PageId> page_iter = pageMap.keySet().iterator();
+        while(page_iter.hasNext()){
+            PageId pid = page_iter.next();
+
+            // Dirty pages are not removed, hence are skipped
+            if (pageMap.get(pid).isDirty() != null) {
+                continue;
             }
+            try {
+                flushPage(pid);
+            } catch (IOException e) {
+                throw new DbException("Error during eviction");
+            }
+            discardPage(pid);
+            return;
         }
 
-        if (minTS != Double.POSITIVE_INFINITY && minTSPageId != null){
-            try{
-                this.flushPage(minTSPageId);
-            }catch(IOException e){
-                System.out.println("IOException thrown when trying to flushPage() | BufferPool.java | evictPage()");
-            }
-            finally{
-                if (!this.LRUCache.containsKey(minTSPageId)){
-                    System.out.println("Page has been flushed successfully | BufferPool.java | evictPage()");
-                }
-            }
-        }
-        else{
-            throw new DbException("No pages to evict! | BufferPool.java | evictPage()");
-        }
+        throw new DbException("No non-dirty pages in the buffer pool");
+
     }
 
 }
