@@ -531,6 +531,7 @@ simpledb.common.LogStuff
 simpledb.common.DependencyGraph
 simpledb.common.Permissions
 java.lang.Object
+simpledb.transaction.TransactionAbortedException
 ||:simpledb.storage.StringField
 java.io.DataOutputStream
 simpledb.common.Type
@@ -586,7 +587,6 @@ java.util.ArrayList
 java.util.List
 simpledb.transaction.TransactionId
 java.util.Map
-simpledb.common.DependencyGraph
 simpledb.common.Permissions
 java.lang.Object
 ||:simpledb.optimizer.LogicalJoinNode

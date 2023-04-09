@@ -37,7 +37,7 @@ public class LockManager {
     // If tid already has a write lock on pid, or no lock but it can acquire a read lock,
     // then acquire the lock and return true. Return false if tid cannot acquire a read lock on pid.
 
-    public boolean periodicCall(){
+    public boolean periodicCall() throws TransactionAbortedException{
         return this.dependencyGraph.containsCycles(this.lockStateMap, this.waiting_map);
     }
     public synchronized boolean grant_shared_lock(TransactionId tid, PageId pid) {

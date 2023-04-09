@@ -6,10 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.FileHandler;
+import simpledb.transaction.TransactionAbortedException;
+
 
 import simpledb.transaction.TransactionId;
 import simpledb.storage.PageId;
 import simpledb.common.LogStuff;
+
 
 
 
@@ -49,14 +52,20 @@ public class DependencyGraph{
         }
     }
 
-    public boolean containsCycles(ConcurrentHashMap<PageId, List<LockState>> lockStateMap, ConcurrentHashMap<TransactionId, PageId> waitList){// using DFS to implement this
-
-        int flag = 0; // flag, cuz need to clear adjacency list before returning true or false.
+    public boolean containsCycles(ConcurrentHashMap<PageId, List<LockState>> lockStateMap, ConcurrentHashMap<TransactionId, PageId> waitList) throws TransactionAbortedException{// using DFS to implement this
+        System.out.println("Checking for cycles...");
+        // need to clear adjacency list everytime as you call the same instance of dependency graph,
+        // and you construct it again
+        for (TransactionId tid: waitList.keySet()){
+            if (this.adjacencyList.contains(tid)){
+                this.remove(tid);
+            }
+        }
+        //int flag = 0; // flag, cuz need to clear adjacency list before returning true or false.
 
         //get list of pages with only one transaction accessing it, and it has READ_WRITE permission.
         ConcurrentHashMap<PageId, TransactionId> singles = new ConcurrentHashMap<PageId, TransactionId>();
         for (PageId pid: lockStateMap.keySet()){
-
             if (lockStateMap.get(pid).size() == 1 && lockStateMap.get(pid).get(0).getPerm() == Permissions.READ_WRITE){
                 singles.put(pid, lockStateMap.get(pid).get(0).getTid());
 //                singles
@@ -68,8 +77,8 @@ public class DependencyGraph{
             TransactionId source = tid;
             PageId destinationPid = waitList.get(tid);
             if (singles.containsKey(destinationPid)) {
-                TransactionId destination = singles.get(waitList.get(tid));
-                this.insert(tid, singles.get(waitList.get(tid)));
+                TransactionId destination = singles.get(destinationPid);
+                this.insert(source, destination);
             }
         }
 
@@ -79,19 +88,14 @@ public class DependencyGraph{
         for (TransactionId tid: this.adjacencyList.keySet()){
             explored.add(tid);
             boolean result = this.DFS(tid, explored);
-            if (result == true){
-                flag = 1;
-                break;
+            if (result == true){// if there is a cycle, then throw an exception
+                throw new TransactionAbortedException("Cycle detected | DependencyGraph.java | containsCycles(lsmap, waitlist)");
             }
         }
         // once the detection is done, clear the adjacency list
-        for (TransactionId tid: waitList.keySet()){
-            if (this.adjacencyList.contains(tid)){
-                this.remove(tid);
-            }
-        }
 
-        return (flag == 0? false:true);
+
+        return false; // if there is no cycle just return false
     }
 
     // helper function for above.
