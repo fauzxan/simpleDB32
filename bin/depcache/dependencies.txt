@@ -1138,6 +1138,12 @@ simpledb.execution.SeqScan
 org.junit.Assert
 simpledb.transaction.TransactionAbortedException
 java.util.Collections
+||:simpledb.common.LockManager$PageLocks
+java.util.HashSet
+simpledb.common.LockManager
+simpledb.common.LockManager$PageLocks
+simpledb.transaction.TransactionId
+java.lang.Object
 ||:simpledb.systemtest.TransactionTest$XactionTester
 simpledb.execution.Delete
 simpledb.systemtest.TransactionTest$ModifiableCyclicBarrier
@@ -2107,6 +2113,7 @@ java.util.Map
 simpledb.common.Database
 simpledb.systemtest.TransactionTest
 simpledb.systemtest.SimpleDbTestBase
+java.io.PrintStream
 simpledb.common.DbException
 simpledb.storage.Tuple
 java.io.IOException

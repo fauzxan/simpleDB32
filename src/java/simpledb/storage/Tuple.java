@@ -1,12 +1,9 @@
 package simpledb.storage;
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.HashMap;
-
-
-import simpledb.storage.TupleDesc.TDItem;
+import java.util.List;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -16,10 +13,11 @@ import simpledb.storage.TupleDesc.TDItem;
 public class Tuple implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
     private TupleDesc td;
-    private RecordId recordId;
-    private int numFields;
-    private HashMap<Integer, Field> fieldsList;
+    private RecordId rid;
+    private List<Field> fieldList;
+
     /**
      * Create a new tuple with the specified schema (type).
      *
@@ -28,30 +26,34 @@ public class Tuple implements Serializable {
      *            instance with at least one field.
      */
     public Tuple(TupleDesc td) {
-        // Lab-1 Exercise 1
-        Iterator<TDItem> iterator = td.iterator();
-
-        if (!iterator.hasNext()){
-            System.out.println("Tuple does not have any items");
+        // some code goes here
+        int fieldCount = td.numFields();
+        if (fieldCount>0){
+            this.td = td;
+            this.rid = null;
+            this.fieldList = new ArrayList<>(fieldCount);
         }
-        this.td = td;
-        this.recordId = null;
-        this.numFields = td.numFields();
-        this.fieldsList = new HashMap<Integer, Field>();
-        
+        else{
+            throw new IllegalArgumentException("The schema of this tuple is not valid!");
+        }
     }
 
     /**
      * @return The TupleDesc representing the schema of this tuple.
      */
     public TupleDesc getTupleDesc() {
-        if (this.td == null ){
-            return null;
-        }
+        // some code goes here
         return this.td;
     }
 
-
+    /**
+     * @return The RecordId representing the location of this tuple on disk. May
+     *         be null.
+     */
+    public RecordId getRecordId() {
+        // some code goes here
+        return this.rid;
+    }
 
     /**
      * Set the RecordId information for this tuple.
@@ -60,29 +62,9 @@ public class Tuple implements Serializable {
      *            the new RecordId for this tuple.
      */
     public void setRecordId(RecordId rid) {
-        // Lab-1 Exercise 1
-        if (this.getTupleDesc() != null){
-            this.recordId = rid;
-        }
-        else{
-            this.recordId = null;
-        }
-
-
+        // some code goes here
+        this.rid = rid;
     }
-    /**
-     * @return The RecordId representing the location of this tuple on disk. May
-     *         be null.
-     */
-    public RecordId getRecordId() {
-        // Lab-1 Exercise 1
-        if (this.getTupleDesc() == null){
-            return null;
-        }
-        return this.recordId;
-    }
-
-    
 
     /**
      * Change the value of the ith field of this tuple.
@@ -92,14 +74,16 @@ public class Tuple implements Serializable {
      * @param f
      *            new value for the field.
      */
-    public void setField(int i, Field f) {
-        // Lab-1 Exercise 1
-        if (this.td.getFieldType(i) == f.getType()){
-            if (this.fieldsList.containsKey(i)){
-                this.fieldsList.replace(i, f);
+    public void setField(int i, Field f) throws IllegalArgumentException {
+        // some code goes here
+        //TO CHECK >> needs type validation?
+        if (i<td.numFields() && i>-1){
+            if(td.getFieldType(i)==f.getType()) {
+                fieldList.add(i, f);
             }
-            else{
-                this.fieldsList.put(i, f);
+            else {
+                //type mismatch
+                throw new IllegalArgumentException();
             }
         }
     }
@@ -111,8 +95,11 @@ public class Tuple implements Serializable {
      *            field index to return. Must be a valid index.
      */
     public Field getField(int i) {
-        // Lab-1 Exercise 1
-        return this.fieldsList.get(i);
+        // some code goes here
+        if (i<td.numFields() && i>-1){
+            return fieldList.get(i);
+        }
+        return null;
     }
 
     /**
@@ -124,36 +111,35 @@ public class Tuple implements Serializable {
      * where \t is any whitespace (except a newline)
      */
     public String toString() {
-        // Lab-1 Exercise 1
-        StringBuffer sb = new StringBuffer("");
-        for (Field x: this.fieldsList.values()){
-            sb.append(x.toString());
-            sb.append("\t");
+        // some code goes here
+        String contents = "";
+        Iterator<Field> fieldIter = fields();
+        while(fieldIter.hasNext()){
+            contents += fieldIter.next().toString()+"\t";
         }
-        return sb.toString();
+        return contents;
     }
 
     /**
      * @return
      *        An iterator which iterates over all the fields of this tuple
-     */
+     * */
     public Iterator<Field> fields()
     {
-        // Lab-1 Exercise 1
-        if (this.numFields>0){
-            return fieldsList.values().iterator();
-        }
-        return null;
+        // some code goes here
+        if (fieldList==null)
+            return null;
+
+        return fieldList.iterator();
     }
 
     /**
      * reset the TupleDesc of this tuple (only affecting the TupleDesc)
-     *
-     */
-    public void resetTupleDesc(TupleDesc td){
-        // Lab-1 Exercise 1
-        this.fieldsList.clear();
+     * */
+    public void resetTupleDesc(TupleDesc td)
+    {
+        // some code goes here
+        //TO CHECK >> need to reset fieldList?
+        this.td = td;
     }
-
-
 }

@@ -1,15 +1,15 @@
 package simpledb.execution;
 
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
+import simpledb.common.DbException;
 import simpledb.common.Type;
-import simpledb.storage.Tuple;
-import simpledb.storage.TupleDesc;
-import simpledb.storage.IntField;
-import simpledb.storage.StringField;
-import simpledb.storage.TupleIterator;
+import simpledb.storage.*;
+import simpledb.transaction.TransactionAbortedException;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
@@ -17,17 +17,13 @@ import simpledb.storage.TupleIterator;
 public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+    int gbfield;
+    Type gbfieldtype; 
+    int afield;
+    Op what;
+    HashMap<Field,Integer> result = new HashMap<Field, Integer>();
+    HashMap<Field,Integer> count = new HashMap<Field, Integer>();
 
-    private int groupByIndex;
-    private Type groupByType;
-    private int aggregateFieldIndex;
-    private Op what;
-    private ConcurrentHashMap<IntField, Integer> aggregator;
-    private ConcurrentHashMap<StringField, Integer> aggregatorS;
-    private IntField keyValue;
-    private StringField keyValueS;
-    private HashMap<IntField, ArrayList<Integer>> averageHelper;
-    private HashMap<StringField, ArrayList<Integer>> averageHelperS;
     /**
      * Aggregate constructor
      * 
@@ -45,16 +41,10 @@ public class IntegerAggregator implements Aggregator {
 
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
-        this.groupByIndex = gbfield;
-        this.groupByType = gbfieldtype;
-        this.aggregateFieldIndex = afield;
+        this.gbfield = gbfield;
+        this.gbfieldtype = gbfieldtype;
+        this.afield = afield;
         this.what = what;
-        this.aggregator = new ConcurrentHashMap<IntField, Integer>();
-        this.aggregatorS = new ConcurrentHashMap<StringField, Integer>();
-        this.keyValue = new IntField(0);
-        this.keyValueS = new StringField("~", 1000);
-        this.averageHelper = new HashMap<IntField, ArrayList<Integer>>();
-        this.averageHelperS = new HashMap<StringField, ArrayList<Integer>>();
     }
 
     /**
@@ -67,126 +57,126 @@ public class IntegerAggregator implements Aggregator {
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
 
-        if(this.groupByIndex != NO_GROUPING && this.groupByType == Type.INT_TYPE) this.keyValue = (IntField) tup.getField(this.groupByIndex);
-        else if (this.groupByIndex != NO_GROUPING && this.groupByType == Type.STRING_TYPE) this.keyValueS = (StringField) tup.getField(this.groupByIndex);
-        IntField aValue = (IntField) tup.getField(this.aggregateFieldIndex);
+        /** Given below is the implementation of aggregation of Integer field. 
+         * As it can be observed, there are muliple ways to aggregate int, 
+         * therefore the multiple if statements to cater to the queries needs */
 
-        if (this.groupByType == Type.INT_TYPE || this.groupByType == null){
-            if (this.what == Op.SUM) {
-                // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregator.containsKey(this.keyValue)) {
-                    aggregator.replace(this.keyValue, aggregator.get(this.keyValue) + aValue.getValue());
-                }
-                // Otherwise, enter a new value into the aggregator
-                else {
-                    aggregator.put(this.keyValue, aValue.getValue());
-                }
-            } else if (this.what == Op.MAX) {
-                // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregator.containsKey(this.keyValue)) {
-                    if (aggregator.get(this.keyValue) < aValue.getValue()) {
-                        aggregator.replace(this.keyValue, aValue.getValue());
-                    }
-                }
-                // Otherwise, enter a new value into the aggregator
-                else {
-                    aggregator.put(this.keyValue, aValue.getValue());
-                }
-            } else if (this.what == Op.MIN) {
-                // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregator.containsKey(this.keyValue)) {
-                    if (aggregator.get(this.keyValue) > aValue.getValue()) {
-                        aggregator.replace(this.keyValue, aValue.getValue());
-                    }
-                }
-                // Otherwise, enter a new value into the aggregator
-                else {
-                    aggregator.put(this.keyValue, aValue.getValue());
-                }
-            } else if (this.what == Op.AVG) {
-                if (!this.averageHelper.containsKey(this.keyValue)) {
-                    this.averageHelper.put(this.keyValue, new ArrayList<Integer>());
-                }
-                ArrayList<Integer> newList = this.averageHelper.get(this.keyValue);
-                newList.add(aValue.getValue());
-                this.averageHelper.put(this.keyValue, newList);
+        IntField value = (IntField) tup.getField(afield);
 
-                Integer Average = 0;
-                for (Integer i : this.averageHelper.get(this.keyValue)) {
-                    Average += i;
+        if(gbfieldtype == Type.INT_TYPE){
+            IntField key = (IntField) tup.getField(gbfield);
+            if(what.toString() == "min"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, Integer.MAX_VALUE);
+                    result.put(null, Math.min(result.get(null), value.getValue()));
+                }    
+                else{
+                    result.putIfAbsent(key, Integer.MAX_VALUE);
+                    result.put(key, Math.min(result.get(key), value.getValue()));
                 }
-                Average = Average / this.averageHelper.get(this.keyValue).size();
-                aggregator.put(this.keyValue, Average);
-            } else if (this.what == Op.COUNT) {
-                if (!aggregator.containsKey(this.keyValue)) {
-                    aggregator.put(this.keyValue, 1);
+            }
+            if(what.toString() == "max"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, Integer.MIN_VALUE);
+                    result.put(null, Math.max(result.get(null), value.getValue()));
+                }    
+                else{
+                    result.putIfAbsent(key, Integer.MIN_VALUE);
+                    result.put(key, Math.max(result.get(key), value.getValue()));
                 }
-                else {
-                    aggregator.replace(this.keyValue, aggregator.get(this.keyValue) + 1);
+            }
+            if(what.toString() == "count"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + 1);
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + 1);
+                }
+            }
+            if(what.toString() == "sum"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + value.getValue());
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + value.getValue());
+                }
+            }
+            if(what.toString() == "avg"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    count.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + value.getValue());
+                    count.put(null, count.get(null) + 1);
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    count.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + value.getValue());
+                    count.put(key, count.get(key) + 1);
                 }
             }
         }
-
-        /**
-         * STRING_TYPE
-         * Different variables used if groupByType is String.
-         */
-        if (this.groupByType == Type.STRING_TYPE){
-            if (this.what == Op.SUM) {
-                // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregatorS.containsKey(this.keyValueS)) {
-                    aggregatorS.replace(this.keyValueS, aggregatorS.get(this.keyValueS) + aValue.getValue());
+        else{
+            StringField key = (StringField)tup.getField(gbfield);
+            if(what.toString() == "min"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, Integer.MAX_VALUE);
+                    result.put(null, Math.min(result.get(null), value.getValue()));
+                }    
+                else{
+                    result.putIfAbsent(key, Integer.MAX_VALUE);
+                    result.put(key, Math.min(result.get(key), value.getValue()));
                 }
-                // Otherwise, enter a new value into the aggregator
-                else {
-                    aggregatorS.put(this.keyValueS, aValue.getValue());
+            }
+            if(what.toString() == "max"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, Integer.MIN_VALUE);
+                    result.put(null, Math.max(result.get(null), value.getValue()));
+                }    
+                else{
+                    result.putIfAbsent(key, Integer.MIN_VALUE);
+                    result.put(key, Math.max(result.get(key), value.getValue()));
                 }
-            } else if (this.what == Op.MAX) {
-                // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregatorS.containsKey(this.keyValueS)) {
-                    if (aggregatorS.get(this.keyValueS) < aValue.getValue()) {
-                        aggregatorS.replace(this.keyValueS, aValue.getValue());
-                    }
+            }
+            if(what.toString() == "count"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + 1);
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + 1);
                 }
-                // Otherwise, enter a new value into the aggregator
-                else {
-                    aggregatorS.put(this.keyValueS, aValue.getValue());
+            }
+            if(what.toString() == "sum"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + value.getValue());
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + value.getValue());
                 }
-            } else if (this.what == Op.MIN) {
-                // if the value already exists in the aggregator, then replace the old value with the new one.
-                if (aggregatorS.containsKey(this.keyValueS)) {
-                    if (aggregatorS.get(this.keyValueS) > aValue.getValue()) {
-                        aggregatorS.replace(this.keyValueS, aValue.getValue());
-                    }
-                }
-                // Otherwise, enter a new value into the aggregator
-                else {
-                    aggregatorS.put(this.keyValueS, aValue.getValue());
-                }
-            } else if (this.what == Op.AVG) {
-                if (!this.averageHelperS.containsKey(this.keyValueS)) {
-                    this.averageHelperS.put(this.keyValueS, new ArrayList<Integer>());
-                }
-                ArrayList<Integer> newList = this.averageHelperS.get(this.keyValueS);
-                newList.add(aValue.getValue());
-                this.averageHelperS.put(this.keyValueS, newList);
-
-                Integer Average = 0;
-                for (Integer i : this.averageHelperS.get(this.keyValueS)) {
-                    Average += i;
-                }
-                Average = Average / this.averageHelperS.get(this.keyValueS).size();
-                aggregatorS.put(this.keyValueS, Average);
-            } else if (this.what == Op.COUNT) {
-                if (!aggregatorS.containsKey(this.keyValueS)) {
-                    aggregatorS.put(this.keyValueS, 1);
-                }
-                else {
-                    aggregatorS.replace(this.keyValueS, aggregatorS.get(this.keyValueS) + 1);
+            }
+            if(what.toString() == "avg"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    count.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + value.getValue());
+                    count.put(null, count.get(null) + 1);
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    count.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + value.getValue());
+                    count.put(key, count.get(key) + 1);
                 }
             }
         }
-
     }
 
     /**
@@ -199,63 +189,51 @@ public class IntegerAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        //return this.aggregator.iterator();
-        ArrayList<Tuple> tuples = new ArrayList<>();
-        if (this.groupByType == Type.INT_TYPE){
-            if (this.groupByIndex != NO_GROUPING) {
-                TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                        new TupleDesc.TDItem(Type.INT_TYPE, null),
-                        new TupleDesc.TDItem(Type.INT_TYPE, null)
-                };
-                TupleDesc td = new TupleDesc(tdItems);
 
-                for (IntField key : this.aggregator.keySet()) {
-                    Tuple t = new Tuple(td);
-                    t.setField(0, key);
-                    t.setField(1, new IntField(this.aggregator.get(key)));
-                    tuples.add(t);
-                }
+        /** As some aggregation queries is done based on a field column or for the 
+         * whole dataset and average aggregation is calculated differently from the 
+         * rest, this code block helps to make sure data processing is handled 
+         * based on case-to-case */
 
-                return new TupleIterator(td, tuples);
-            } else {
-                TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                        new TupleDesc.TDItem(Type.INT_TYPE, null)
-                };
-                TupleDesc td = new TupleDesc(tdItems);
-                Tuple t = new Tuple(td);
-                t.setField(0, new IntField(aggregator.get(this.keyValue)));
-                tuples.add(t);
-                return new TupleIterator(td, tuples);
+        ArrayList<Tuple> tup_lis = new ArrayList<Tuple>();
+        TupleDesc td;
+        if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING){
+            Type[] types = new Type[1];
+            types[0] = Type.INT_TYPE;
+            td = new TupleDesc(types);
+            Tuple tp = new Tuple(td);
+            if(what.toString() == "avg"){
+                tp.setField(0, new IntField((int)(result.get(null)/count.get(null))));
+                tup_lis.add(tp);
             }
-            // throw new UnsupportedOperationException("please implement me for lab2");
+            else{
+                tp.setField(0, new IntField((int)result.get(null)));
+                tup_lis.add(tp);
+            }
         }
         else{
-            if (this.groupByIndex != NO_GROUPING) {
-                TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                        new TupleDesc.TDItem(Type.STRING_TYPE, null),
-                        new TupleDesc.TDItem(Type.INT_TYPE, null)
-                };
-                TupleDesc td = new TupleDesc(tdItems);
-
-                for (StringField key : this.aggregatorS.keySet()) {
-                    Tuple t = new Tuple(td);
-                    t.setField(0, key);
-                    t.setField(1, new IntField(this.aggregatorS.get(key)));
-                    tuples.add(t);
+            Type[] types = new Type[2];
+            types[0] = gbfieldtype;
+            types[1] = Type.INT_TYPE;
+            td = new TupleDesc(types);
+            Tuple tp;
+            if(what.toString() == "avg"){
+                for (Map.Entry<Field, Integer> set : result.entrySet()) {
+                    tp = new Tuple(td);
+                    tp.setField(0, set.getKey());
+                    tp.setField(1, new IntField((int)(result.get(set.getKey())/count.get(set.getKey()))));
+                    tup_lis.add(tp);
                 }
-
-                return new TupleIterator(td, tuples);
-            } else {
-                TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                        new TupleDesc.TDItem(Type.INT_TYPE, null)
-                };
-                TupleDesc td = new TupleDesc(tdItems);
-                Tuple t = new Tuple(td);
-                t.setField(0, new IntField(aggregator.get(this.keyValue)));
-                tuples.add(t);
-                return new TupleIterator(td, tuples);
             }
-
+            else{
+                for (Map.Entry<Field, Integer> set : result.entrySet()) {
+                    tp = new Tuple(td);
+                    tp.setField(0, set.getKey());
+                    tp.setField(1, new IntField((int)result.get(set.getKey())));
+                    tup_lis.add(tp);
+                }
+            }
         }
+        return new TupleIterator(td, tup_lis);
     }
 }

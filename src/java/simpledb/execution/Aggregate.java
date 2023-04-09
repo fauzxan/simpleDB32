@@ -141,8 +141,8 @@ public class Aggregate extends Operator {
         super.open();
         agg_iter.open();
     }
-
-
+   
+    
 
     /**
      * Returns the next tuple. If there is a group by field, then the first

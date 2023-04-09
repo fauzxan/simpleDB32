@@ -13,10 +13,6 @@ import java.util.*;
 public class Join extends Operator {
 
     private static final long serialVersionUID = 1L;
-    private JoinPredicate predicate;
-    private OpIterator child1;
-    private OpIterator child2;
-    private Tuple child1_tuple;
 
     /**
      * Constructor. Accepts two children to join and the predicate to join them
@@ -29,6 +25,15 @@ public class Join extends Operator {
      * @param child2
      *            Iterator for the right(inner) relation to join
      */
+
+    private JoinPredicate predicate;
+
+    private OpIterator child1;
+
+    private OpIterator child2;
+
+    private Tuple tuple1;
+
     public Join(JoinPredicate p, OpIterator child1, OpIterator child2) {
         this.predicate = p;
         this.child1 = child1;
@@ -73,14 +78,14 @@ public class Join extends Operator {
     }
 
     public void close() {
-        child1_tuple = null;
+        tuple1 = null;
         child1.close();
         child2.close();
         super.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        child1_tuple = null;
+        tuple1 = null;
         child1.rewind();
         child2.rewind();
     }
@@ -104,38 +109,38 @@ public class Join extends Operator {
      * @see JoinPredicate#filter
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        if(child1_tuple == null) {
+        if(tuple1 == null) {
             if(!child1.hasNext()) return null;
-            child1_tuple = child1.next();
+            tuple1 = child1.next();
         }
         if(!child2.hasNext()) {
             if(!child1.hasNext()) {
                 return null;
             }
             child2.rewind();
-            child1_tuple = child1.next();
+            tuple1 = child1.next();
         }
         while(child2.hasNext()) {
-            Tuple child2_tuple = child2.next();
-            if(predicate.filter(child1_tuple, child2_tuple)) {
-                int n1 = child1_tuple.getTupleDesc().numFields();
-                int n2 = child2_tuple.getTupleDesc().numFields();
-                TupleDesc td = TupleDesc.merge(child1_tuple.getTupleDesc(), child2_tuple.getTupleDesc());
-                Tuple new_tuple = new Tuple(td);
+            Tuple tuple2 = child2.next();
+            if(predicate.filter(tuple1, tuple2)) {
+                int n1 = tuple1.getTupleDesc().numFields();
+                int n2 = tuple2.getTupleDesc().numFields();
+                TupleDesc td = TupleDesc.merge(tuple1.getTupleDesc(), tuple2.getTupleDesc());
+                Tuple t = new Tuple(td);
                 for(int i=0;i<n1;i++) {
-                    new_tuple.setField(i, child1_tuple.getField(i));
+                    t.setField(i, tuple1.getField(i));
                 }
                 for(int i=n1;i<n1+n2;i++) {
-                    new_tuple.setField(i, child2_tuple.getField(i-n1));
+                    t.setField(i, tuple2.getField(i-n1));
                 }
-                return new_tuple;
+                return t;
             }
             if(!child2.hasNext()) {
                 if(!child1.hasNext()) {
                     return null;
                 }
                 child2.rewind();
-                child1_tuple = child1.next();
+                tuple1 = child1.next();
             }
         }
         return null;
@@ -151,4 +156,5 @@ public class Join extends Operator {
         child1 = children[0];
         child2 = children[1];
     }
+
 }

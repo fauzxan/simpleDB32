@@ -366,9 +366,9 @@ public class Parser {
                                 + zc.getValue()
                                 + " is a string, expected an integer.");
                     }
-                    StringField f = new StringField(zc.getValue(), Type.STRING_LEN);
+                    StringField f = new StringField(zc.getValue(),
+                            Type.STRING_LEN);
                     t.setField(i, f);
-
                 } else {
                     throw new simpledb.ParsingException(
                             "Only string or int fields are supported.");

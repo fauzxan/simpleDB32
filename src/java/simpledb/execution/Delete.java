@@ -21,67 +21,50 @@ public class Delete extends Operator {
     private static final long serialVersionUID = 1L;
 
     private TransactionId tid;
-
     private OpIterator child;
-
-    private TupleDesc td;
-
-    private boolean hasEntered;
-
-    private int count;
+    private boolean isCalled;
+    private TupleDesc outputTD;
 
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
      * 
-     * @param t
+     * @param tid
      *            The transaction this delete runs in
      * @param child
      *            The child operator from which to read tuples for deletion
      */
-    public Delete(TransactionId t, OpIterator child) {
+    public Delete(TransactionId tid, OpIterator child) {
         // some code goes here
-        this.tid = t;
+        this.tid = tid;
         this.child = child;
-        this.count = -1;
-        Type[] typeAr = new Type[1];
-        typeAr[0] = Type.INT_TYPE;
-        String[] stringAr = new String[1];
-        stringAr[0] = null;
-        td = new TupleDesc(typeAr, stringAr);
-        //td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{null});
+        this.isCalled=false;
+        this.outputTD = new TupleDesc(new Type[]{Type.INT_TYPE});
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return this.td;
+        //reminder: return the TupleDesc of the output tuples of this operator
+        return outputTD;
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
-        this.child.open();
         super.open();
-        this.count =0;
-        hasEntered = false;
-        while (child.hasNext()) {
-            Tuple next = child.next();
-            Database.getBufferPool().deleteTuple(tid, next);
-            count++;
-        }
+        child.open();
     }
 
     public void close() {
         // some code goes here
         super.close();
-        this.count = -1;
         child.close();
+        isCalled=false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
-        hasEntered = false;
-        this.child.rewind();
-        this.count = 0;
+        child.rewind();
+        isCalled=false;
     }
 
     /**
@@ -95,13 +78,26 @@ public class Delete extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        if (hasEntered) {
+        //TO CHECK >> hasn't been mentioned here, but similar to Insert should be called only once per transaction?
+        //without isCalled check, tests fail on fetchNext
+        if (isCalled)
             return null;
+
+        isCalled = true;
+
+        Tuple num_tuple = new Tuple(outputTD);
+        int tupleDeleted = 0;
+        while(child.hasNext()){
+            Tuple t = child.next();
+            try{
+                Database.getBufferPool().deleteTuple(tid, t);
+                tupleDeleted += 1;
+            } catch (IOException e){
+                throw new DbException("fail to delete");
+            }
         }
-        hasEntered = true;
-        Tuple deleted_num=new Tuple(getTupleDesc());
-        deleted_num.setField(0,new IntField(this.count));
-        return deleted_num; 
+        num_tuple.setField(0, new IntField(tupleDeleted));
+        return num_tuple;
     }
 
     @Override

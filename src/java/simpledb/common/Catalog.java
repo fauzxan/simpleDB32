@@ -1,6 +1,5 @@
 package simpledb.common;
 
-import simpledb.common.Type;
 import simpledb.storage.DbFile;
 import simpledb.storage.HeapFile;
 import simpledb.storage.TupleDesc;
@@ -13,98 +12,91 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Catalog: Stores information that is common to all the records of a given record type.
- * <br/><br/>
  * The Catalog keeps track of all available tables in the database and their
  * associated schemas.
  * For now, this is a stub catalog that must be populated with tables by a
  * user program before it can be used -- eventually, this should be converted
  * to a catalog that reads a catalog table from disk.
- * 
+ *
  * @Threadsafe
  */
-
-
 public class Catalog {
 
-
-
-
-    public ConcurrentHashMap<Integer, Table> catalog;
-
-
-    public class Table{
-        TupleDesc td;
-        String primaryKey;
-        String name;
-        DbFile dbFile;
+    public static class Table {
+        /**
+         * The content of a table
+         * */
+        DbFile file;
 
         /**
-         *
-         * @param td tupleDesc object
-         * @param pk primaryKey field
-         * @param name Name of table
-         * @param dbFile dbFile that stores the tuples
-         */
-        public Table(TupleDesc td, String pk, String name, DbFile dbFile){
-            this.td = td;
-            this.primaryKey = pk;
+         * The name of a table
+         * */
+        String name;
+
+        /**
+         * The primary key field name of a table
+         * */
+        String pkeyField;
+
+        public Table(DbFile file, String name, String pkeyField) {
+            this.file = file;
             this.name = name;
-            this.dbFile = dbFile;
+            this.pkeyField = pkeyField;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getPkeyField() {
+            return pkeyField;
+        }
+
+        public DbFile getFile() {
+            return file;
         }
     }
 
+    /** Mapping of tables by ID **/
+    private ConcurrentHashMap<Integer, Table> tableMap;
 
     /**
-     * Carry out the necessary checks for creating the table
-     * @param file file cannot be null
-     * @param name must not be null. It can be empty
-     * @param pkeyField Cannot be null or empty
-     * @return An instantiated Table object
+     * Constructor.
+     * Creates a new, empty catalog.
      */
-    public Table createTable(DbFile file, String name, String pkeyField) throws NullPointerException{
-        if (file == null || name == null || pkeyField == null){
-            throw new NullPointerException("Null value during the creation of Table object! | Catalog.java | createTable(file, name, pkeyField)");
-        }
-        if (pkeyField == ""){
-            System.out.println("Warning: Primary Key field is '' | Catalog.java | createTable(file, name, pkeyField)");
-        }
-
-        for (Integer key: this.catalog.keySet()){
-            if (this.catalog.get(key).name == name){
-                this.catalog.remove(key);
-            }
-        }
-        return new Table(file.getTupleDesc(), pkeyField, name, file);
-    }
-
-
-
-
     public Catalog() {
-        // Lab-1 Exercise 2
-        this.catalog = new ConcurrentHashMap<Integer, Table>();
+        // some code goes here
+        this.tableMap = new ConcurrentHashMap<>();
     }
-
-
 
     /**
      * Add a new table to the catalog.
      * This table's contents are stored in the specified DbFile.
-     * If there exists a table with the same name or ID, replace that old table with this one. 
+     * If there exists a table with the same name or ID, replace that old table with this one.
      * @param file the contents of the table to add;  file.getId() is the identfier of
-     *    this file/tupledesc param for the calls getTupleDesc and getFile. 
-     * @param name the name of the table -- may be an empty string.  May not be null.  
+     *    this file/tupledesc param for the calls getTupleDesc and getFile.
+     * @param name the name of the table -- may be an empty string.  May not be null.
      * @param pkeyField the name of the primary key field
      */
-
-
     public void addTable(DbFile file, String name, String pkeyField) {
-        // Lab-1 Exercise 2
-        if (this.catalog.containsKey(file.getId())){
-            this.catalog.remove(file.getId());
+        // some code goes here
+        if (file==null || name==null || pkeyField==null)
+            throw new IllegalArgumentException();
+
+        Integer tableId = file.getId();
+        boolean notValidName = name==null || name.isEmpty();
+        String tableName = notValidName?UUID.randomUUID().toString():name;  //use random name if empty or null
+
+        if(!tableMap.containsKey(tableId)){
+            //check if name already exists
+            Optional<Integer> optNameToId = tableMap.entrySet().stream()
+                    .filter(e -> tableName.equals(e.getValue().name))
+                    .map(Map.Entry::getKey).findFirst();
+
+            optNameToId.ifPresent(id -> tableMap.remove(id));
         }
-        this.catalog.put(Integer.valueOf(file.getId()), this.createTable(file, name, pkeyField));
+
+        tableMap.put(tableId, new Table(file, tableName, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
@@ -127,15 +119,15 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // Lab-1 Exercise 2
-        for (Integer key: this.catalog.keySet()){
-            System.out.println("Name is:"+this.catalog.get(key).name);
-            if (this.catalog.get(key).name == name) {
-                return key;
-            }
-        }
+        // some code goes here
+        if (name==null)
+            throw new NoSuchElementException();
 
-        throw new NoSuchElementException("While looking for name within catalog, no such name was found! | Catalog.java | getTableId(name)");
+        Optional<Integer> optNameToId = tableMap.entrySet().stream()
+                .filter(e -> name.equals(e.getValue().name))
+                .map(Map.Entry::getKey).findFirst();
+
+        return (int) optNameToId.orElseThrow(NoSuchElementException::new);
     }
 
     /**
@@ -143,19 +135,13 @@ public class Catalog {
      * @param tableid The id of the table, as specified by the DbFile.getId()
      *     function passed to addTable
      * @throws NoSuchElementException if the table doesn't exist
-     * This method returns the entire value present at that file ID
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // Lab-1 Exercise 2
-        if (!this.catalog.containsKey(tableid)){
-            throw new NoSuchElementException("Couldn't find key with parameter passed | Catalog.java | getTupleDesc(tableid)");
-        }
-        else{
-            return this.catalog.get(tableid).td;
-        }
-
+        // some code goes here
+        if (!isTableExists(tableid))
+            throw new NoSuchElementException();
+        return tableMap.get(tableid).file.getTupleDesc();
     }
-
 
     /**
      * Returns the DbFile that can be used to read the contents of the
@@ -164,49 +150,47 @@ public class Catalog {
      *     function passed to addTable
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // Lab-1 Exercise 2
-        if (!this.catalog.containsKey(tableid)){
-            throw new NoSuchElementException("While looking carrying out getDatabaseFile, couldn't find key with parameter passed | Catalog.java | getDatabaseFile(tableid)");
-        }
-        else{
-            return this.catalog.get(tableid).dbFile;
+        // some code goes here
+        if (!isTableExists(tableid))
+            throw new NoSuchElementException();
+        return tableMap.get(tableid).file;
+    }
+
+    public String getPrimaryKey(int tableid) {
+        // some code goes here
+        //TO CHECK >> NSE exception here?
+        if (!isTableExists(tableid))
+            throw new NoSuchElementException();
+        return tableMap.get(tableid).pkeyField;
+    }
+
+    public Iterator<Integer> tableIdIterator() {
+        // some code goes here
+        try {
+            return tableMap.keySet().iterator();
+        } catch(Exception e){
+            return null;
         }
     }
 
-    public String getPrimaryKey(int tableid) throws NoSuchElementException{
-        // Lab-1 Exercise 2
-        if (!this.catalog.containsKey(tableid)){
-            throw new NoSuchElementException("While looking carrying out getPrimaryKey, couldn't find key with parameter passed | Catalog.java | getPrimaryKey(tableid)");
-        }
-        else{
-            return this.catalog.get(tableid).primaryKey;
-        }
+    public String getTableName(int id) {
+        // some code goes here
+        //TO CHECK >> NSE exception here?
+        if (!isTableExists(id))
+            throw new NoSuchElementException();
+        return tableMap.get(id).name;
     }
 
-    public Iterator<Integer> tableIdIterator(){
-        // Lab-1 Exercise 2
-            return this.catalog.keySet().iterator();
-
+    public boolean isTableExists(int tableid){
+        return tableMap.containsKey(tableid);
     }
 
-    public String getTableName(int id) throws NoSuchElementException{
-        // Lab-1 Exercise 2
-        if (this.catalog.containsKey(id)){
-            return this.catalog.get(id).name;
-        }
-        else{
-            throw new NoSuchElementException("While looking carrying out getTableName, couldn't find key with parameter passed | Catalog.java | getTableName(id)");
-        }
-    }
-    
     /** Delete all tables from the catalog */
     public void clear() {
-        // Lab-1 Exercise 2
-        for (Integer key: this.catalog.keySet()){
-            this.catalog.remove(key);
-        }
+        // some code goes here
+        tableMap.clear();
     }
-    
+
     /**
      * Reads the schema from a file and creates the appropriate tables in the database.
      * @param catalogFile
@@ -216,9 +200,11 @@ public class Catalog {
         String baseFolder=new File(new File(catalogFile).getAbsolutePath()).getParent();
         try {
             BufferedReader br = new BufferedReader(new FileReader(catalogFile));
-            
+
             while ((line = br.readLine()) != null) {
+                //assume line is of the format name (field type, field type, ...)
                 String name = line.substring(0, line.indexOf("(")).trim();
+                //System.out.println("TABLE NAME: " + name);
                 String fields = line.substring(line.indexOf("(") + 1, line.indexOf(")")).trim();
                 String[] els = fields.split(",");
                 ArrayList<String> names = new ArrayList<>();
@@ -255,9 +241,8 @@ public class Catalog {
             e.printStackTrace();
             System.exit(0);
         } catch (IndexOutOfBoundsException e) {
-            System.out.println ("Invalid catalog entry | Catalog.java | loadSchema(catalogFile) : " + line);
+            System.out.println ("Invalid catalog entry : " + line);
             System.exit(0);
         }
     }
 }
-

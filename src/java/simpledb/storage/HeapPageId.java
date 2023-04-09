@@ -1,10 +1,11 @@
 package simpledb.storage;
 
-import java.util.Arrays;
-
 /** Unique identifier for HeapPage objects. */
 public class HeapPageId implements PageId {
 
+
+    Integer tableID;
+    Integer pageNo;
 
     /**
      * Constructor. Create a page id structure for a specific page of a
@@ -13,19 +14,17 @@ public class HeapPageId implements PageId {
      * @param tableId The table that is being referenced
      * @param pgNo The page number in that table.
      */
-    int [] data; // Array to hold TableId and PageNumber
 
     public HeapPageId(int tableId, int pgNo) {
-        //Lab-1 Exercise 4
-        data = new int[2];
-        data[0] = tableId;
-        data[1] = pgNo;
-        }
+        // some code goes here
+        tableID = tableId;
+        pageNo = pgNo;
+    }
 
     /** @return the table associated with this PageId */
     public int getTableId() {
-        //Lab-1 Exercise 4
-        return this.data[0];
+        // some code goes here
+        return tableID;
     }
 
     /**
@@ -33,8 +32,8 @@ public class HeapPageId implements PageId {
      *   this PageId
      */
     public int getPageNumber() {
-        //Lab-1 Exercise 4
-        return this.data[1];
+        // some code goes here
+        return pageNo;
     }
 
     /**
@@ -43,9 +42,12 @@ public class HeapPageId implements PageId {
      *   key in a hash table in the BufferPool, for example.)
      * @see BufferPool
      */
+    @Override
     public int hashCode() {
-        //Lab-1 Exercise 4
-        return Arrays.hashCode(this.data);
+        // some code goes here
+        String temp = Integer.toString(tableID.hashCode()) + "/" + Integer.toString(pageNo.hashCode());
+        return temp.hashCode();
+        // throw new UnsupportedOperationException("implement this");
     }
 
     /**
@@ -55,17 +57,10 @@ public class HeapPageId implements PageId {
      * @return true if the objects are equal (e.g., page numbers and table
      *   ids are the same)
      */
+    @Override
     public boolean equals(Object o) {
-        //Lab-1 Exercise 4
-        if (!(o instanceof PageId)) { //Checks if the Object is of PageType
-            return false;
-        }
-        if (o == this) {
-            return true;
-        }
-        PageId page = (PageId) o;
-        return page.getTableId() == this.getTableId() && page.getPageNumber() == this.getPageNumber();
-
+        // some code goes here
+        return o.hashCode() == hashCode();
     }
 
     /**
@@ -73,11 +68,13 @@ public class HeapPageId implements PageId {
      *  integers, for writing to disk.  Size of returned array must contain
      *  number of integers that corresponds to number of args to one of the
      *  constructors.
-     *
-     *  Data is stored as an array of integers
      */
     public int[] serialize() {
-        //Lab-1 Exercise 4
+        int[] data = new int[2];
+
+        data[0] = getTableId();
+        data[1] = getPageNumber();
+
         return data;
     }
 

@@ -1,29 +1,27 @@
 package simpledb.execution;
 
-
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
+import simpledb.common.DbException;
 import simpledb.common.Type;
-import simpledb.storage.Tuple;
-import simpledb.storage.TupleDesc;
-import simpledb.storage.IntField;
-import simpledb.storage.StringField;
-import simpledb.storage.TupleIterator;
+import simpledb.storage.*;
+import simpledb.transaction.TransactionAbortedException;
+
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
 public class StringAggregator implements Aggregator {
 
-    private static final long serialVersionUID = 1L;
-    private int groupByIndex;
-    private Type groupByType;
-    private int aggregateFieldIndex;
-    private Op what;
-    private ConcurrentHashMap<IntField, Integer> aggregator;
-    private IntField keyValue;
-    private HashMap<IntField, ArrayList<String>> countHelper;
+    private static final long serialVersionUID = 1L;int gbfield;
+    Type gbfieldtype; 
+    int afield;
+    Op what;
+    HashMap<Field,Integer> result = new HashMap<Field, Integer>();
+    HashMap<Field,Integer> count = new HashMap<Field, Integer>();
 
     /**
      * Aggregate constructor
@@ -32,22 +30,14 @@ public class StringAggregator implements Aggregator {
      * @param afield the 0-based index of the aggregate field in the tuple
      * @param what aggregation operator to use -- only supports COUNT
      * @throws IllegalArgumentException if what != COUNT
-     */
+     */ 
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
-        this.groupByIndex = gbfield;
-        this.groupByType = gbfieldtype;
-        this.aggregateFieldIndex = afield;
-        if (what == Op.COUNT){
-            this.what = what;
-        }
-        else if (what != Op.COUNT){
-            throw new IllegalArgumentException("Operator passed is not Op.COUNT | StringAggregator() | StringAggregator.java");
-        }
-        this.aggregator = new ConcurrentHashMap<IntField, Integer>();
-        this.countHelper = new HashMap<IntField, ArrayList<String>>();
-        this.keyValue = new IntField(0);
+        this.gbfield = gbfield;
+        this.gbfieldtype = gbfieldtype;
+        this.afield = afield;
+        this.what = what;
     }
 
     /**
@@ -57,19 +47,34 @@ public class StringAggregator implements Aggregator {
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
 
-        if(this.groupByIndex != NO_GROUPING && this.groupByType == Type.INT_TYPE) this.keyValue = (IntField) tup.getField(this.groupByIndex); // update key value if grouping exists
-        else if (this.groupByIndex != NO_GROUPING && this.groupByType == Type.STRING_TYPE) this.keyValue = new IntField(tup.getField(this.groupByIndex).hashCode());
-
-        StringField aValue = (StringField) tup.getField(this.aggregateFieldIndex);
-
-        if (!this.countHelper.containsKey(this.keyValue)){
-            this.countHelper.put(this.keyValue, new ArrayList<String>());
+        /** Simpler implementation compared to IntegerAggregator based on the 
+         * grouping field or the total data */
+        if(gbfieldtype == Type.INT_TYPE){
+            IntField key = (IntField) tup.getField(gbfield);
+            if(what.toString() == "count"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + 1);
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + 1);
+                }
+            }
         }
-//        this.countHelper.put(this.keyValue, aValue.getValue());
-        ArrayList<String> newList = this.countHelper.get(this.keyValue);
-        newList.add(aValue.getValue());
-        this.countHelper.put(this.keyValue, newList);
-        aggregator.put(this.keyValue, this.countHelper.get(this.keyValue).size());
+        else{
+            StringField key = (StringField)tup.getField(gbfield);
+            if(what.toString() == "count"){
+                if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING) {
+                    result.putIfAbsent(null, 0);
+                    result.put(null, result.get(null) + 1);
+                }    
+                else{
+                    result.putIfAbsent(key, 0);
+                    result.put(key, result.get(key) + 1);
+                }
+            }
+        }
     }
 
     /**
@@ -82,34 +87,34 @@ public class StringAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        ArrayList<Tuple> tuples = new ArrayList<>();
 
-        if (this.groupByIndex != NO_GROUPING){
-            TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                    new TupleDesc.TDItem(Type.INT_TYPE, null),
-                    new TupleDesc.TDItem(Type.INT_TYPE, null)
-            };
-            TupleDesc td = new TupleDesc(tdItems);
-
-            for (IntField key: this.aggregator.keySet()) {
-                Tuple t = new Tuple(td);
-                t.setField(0, key);
-                t.setField(1, new IntField(this.aggregator.get(key)));
-                tuples.add(t);
-            }
-            return new TupleIterator(td, tuples);
+        /** To process the data into iterator for different group fields or
+         * the whole dataset together
+         */
+        ArrayList<Tuple> tup_lis = new ArrayList<Tuple>();
+        TupleDesc td;
+        if(gbfieldtype == null || gbfield == Aggregator.NO_GROUPING){
+            Type[] types = new Type[1];
+            types[0] = Type.INT_TYPE;
+            td = new TupleDesc(types);
+            Tuple tp = new Tuple(td);
+            tp.setField(0, new IntField((int)result.get(null)));
+            tup_lis.add(tp);
         }
-
         else{
-            TupleDesc.TDItem[] tdItems = new TupleDesc.TDItem[]{
-                    new TupleDesc.TDItem(Type.INT_TYPE, null)
-            };
-            TupleDesc td = new TupleDesc(tdItems);
-            Tuple t = new Tuple(td);
-            t.setField(0, new IntField(aggregator.get(this.keyValue)));
-            tuples.add(t);
-            return new TupleIterator(td, tuples);
+            Type[] types = new Type[2];
+            types[0] = gbfieldtype;
+            types[1] = Type.INT_TYPE;
+            td = new TupleDesc(types);
+            Tuple tp;
+            for (Map.Entry<Field, Integer> set : result.entrySet()) {
+                tp = new Tuple(td);
+                tp.setField(0, set.getKey());
+                tp.setField(1, new IntField((int)result.get(set.getKey())));                    
+                tup_lis.add(tp);
+            }
         }
+        return new TupleIterator(td, tup_lis);
     }
 
 }

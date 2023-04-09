@@ -1,9 +1,6 @@
 package simpledb.storage;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
 
 /**
  * A RecordId is a reference to a specific tuple on a specific page of a
@@ -12,9 +9,8 @@ import java.util.NoSuchElementException;
 public class RecordId implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    PageId pid;
-    Integer tupleno;
-    List<Object> recordId;
+    PageId pageId;
+    Integer tupleNo;
 
     /**
      * Creates a new RecordId referring to the specified PageId and tuple
@@ -26,32 +22,25 @@ public class RecordId implements Serializable {
      *            the tuple number within the page.
      */
     public RecordId(PageId pid, int tupleno) {
-        // Lab-1 Exercise 4
-        this.pid = pid;
-        this.tupleno = tupleno;
-
-        this.recordId = new ArrayList<Object> (2);
-        recordId.add(pid);
-        recordId.add(tupleno);
+        // some code goes here
+        pageId = pid;
+        tupleNo = tupleno;
     }
 
     /**
      * @return the tuple number this RecordId references.
      */
-    public int getTupleNumber() throws NoSuchElementException{
-        // Lab-1 Exercise 4
-        if (this.tupleno != null) {
-            return (int) this.recordId.get(1);
-        }
-        else throw new NoSuchElementException("No such tupleno | RecordId.java | getTupleNumber()");
+    public int getTupleNumber() {
+        // some code goes here
+        return tupleNo;
     }
 
     /**
      * @return the page id this RecordId references.
      */
-    public PageId getPageId(){
-        // Lab-1 Exercise 4
-        return (PageId) this.recordId.get(0);
+    public PageId getPageId() {
+        // some code goes here
+        return pageId;
     }
 
     /**
@@ -62,8 +51,9 @@ public class RecordId implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
-        // Lab-1 Exercise 4
-        return this.hashCode() == o.hashCode();
+        // some code goes here
+        return o.hashCode() == hashCode();
+        // throw new UnsupportedOperationException("implement this");
     }
 
     /**
@@ -74,9 +64,11 @@ public class RecordId implements Serializable {
      */
     @Override
     public int hashCode() {
-        // Lab-1 Exercise 4
-        String hashitem = this.recordId.get(0).toString() + "," + this.recordId.get(1).toString();
-        return hashitem.hashCode();
+        // some code goes here
+        String temp = Integer.toString(pageId.hashCode()) + "/" + Integer.toString(tupleNo.hashCode());
+        return temp.hashCode();
+        // throw new UnsupportedOperationException("implement this");
+
     }
 
 }

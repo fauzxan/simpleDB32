@@ -19,11 +19,6 @@ import java.util.*;
 public class SeqScan implements OpIterator {
 
     private static final long serialVersionUID = 1L;
-    TransactionId tid;
-    int tableid;
-    String tableAlias;
-    DbFileIterator iterator;
-
 
     /**
      * Creates a sequential scan over the specified table as a part of the
@@ -41,12 +36,19 @@ public class SeqScan implements OpIterator {
      *            are, but the resulting name can be null.fieldName,
      *            tableAlias.null, or null.null).
      */
+
+    private TransactionId transactionId;
+
+    private int tableId;
+
+    private String tableAlias;
+
+    DbFileIterator iterator;
+
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
-        // Lab-1 Exercise 6
-        this.tid = tid;
-        this.tableid = tableid;
+        this.transactionId = tid;
+        this.tableId = tableid;
         this.tableAlias = tableAlias;
-        this.iterator = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
     }
 
     /**
@@ -54,15 +56,8 @@ public class SeqScan implements OpIterator {
      *       return the table name of the table the operator scans. This should
      *       be the actual name of the table in the catalog of the database
      * */
-    public String getTableName() throws NoSuchElementException{
-        // Lab-1 Exercise 6
-        String name = Database.getCatalog().getTableName(this.tableid);
-        if (name != null) {
-            return name;
-        }
-        else{
-            throw new NoSuchElementException("No such table name | SeqScan.java | getTableName()");
-        }
+    public String getTableName() {
+        return Database.getCatalog().getTableName(tableId);
     }
 
     /**
@@ -70,14 +65,7 @@ public class SeqScan implements OpIterator {
      * */
     public String getAlias()
     {
-        // Lab-1 Exercise 6
-        String alias = this.tableAlias;
-        if (alias != null){
-            return alias;
-        }
-        else{
-            throw new NoSuchElementException("Table Alias not created properly while seqScanning | SeqScan.java | getAlias()");
-        }
+        return tableAlias;
     }
 
     /**
@@ -93,8 +81,7 @@ public class SeqScan implements OpIterator {
      *            tableAlias.null, or null.null).
      */
     public void reset(int tableid, String tableAlias) {
-        // Lab-1 Exercise 6
-        this.tableid = tableid;
+        this.tableId = tableid;
         this.tableAlias = tableAlias;
     }
 
@@ -103,8 +90,8 @@ public class SeqScan implements OpIterator {
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // Lab-1 Exercise 6
-        this.iterator.open();
+        iterator = Database.getCatalog().getDatabaseFile(tableId).iterator(transactionId);
+        iterator.open();
     }
 
     /**
@@ -118,54 +105,32 @@ public class SeqScan implements OpIterator {
      *         prefixed with the tableAlias string from the constructor.
      */
     public TupleDesc getTupleDesc() {
-        // Lab-1 Exercise 6
-        TupleDesc td = Database.getCatalog().getTupleDesc(this.tableid);
-        Type[] typeArr = new Type[td.numFields()];
-        String[] fieldArr = new String[td.numFields()];
-        if (td != null){
-            for (int i=0; i<td.numFields(); i++){
-                typeArr[i] = td.getFieldType(i);
-                fieldArr[i] = this.tableAlias+"."+td.getFieldName(i);
-            }
-            return new TupleDesc(typeArr, fieldArr);
+        TupleDesc desc = Database.getCatalog().getTupleDesc(tableId);
+        int n = desc.numFields();
+        Type[] typeAr = new Type[n];
+        String[] fieldAr = new String[n];
+        for(int i=0;i<n;i++) {
+            typeAr[i] = desc.getFieldType(i);
+            fieldAr[i] = tableAlias+"."+desc.getFieldName(i);
         }
-        else{
-            throw new NoSuchElementException("Could not get tuple desc while seqScanning, or it is empty | SeqScan.java | getTupleDesc()");
-        }
+        return new TupleDesc(typeAr, fieldAr);
     }
 
-
     public boolean hasNext() throws TransactionAbortedException, DbException {
-        // Lab-1 Exercise 6
-        return this.iterator.hasNext();
-
+        return iterator.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        // Lab-1 Exercise 6
-        return this.iterator.next();
+        return iterator.next();
     }
 
     public void close() {
-        // Lab-1 Exercise 6
-        this.iterator.close();
+        iterator.close();
     }
 
     public void rewind() throws DbException, NoSuchElementException,
             TransactionAbortedException {
-        // Lab-1 Exercise 6
-        try{
-            this.iterator.rewind();
-        }
-        catch (DbException e1){
-            System.out.println("DbException occurred while trying to rewind the connection in SeqScan | SeqScan.java | rewind");
-        }
-        catch(NoSuchElementException e2){
-            System.out.println("NoSuchElementException occurred while trying to rewind the connection in SeqScan | SeqScan.java | rewind");
-        }
-        catch(TransactionAbortedException e3){
-            System.out.println("TransactionAbortedException occurred while trying to rewind the connection in SeqScan | SeqScan.java | rewind");
-        }
+        iterator.rewind();
     }
 }
