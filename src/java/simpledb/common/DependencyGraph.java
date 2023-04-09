@@ -58,7 +58,7 @@ public class DependencyGraph{
         for (PageId pid: lockStateMap.keySet()){
 
             if (lockStateMap.get(pid).size() == 1 && lockStateMap.get(pid).get(0).getPerm() == Permissions.READ_WRITE){
-                singles.put(pid, lockStateMap.get(pid).get(1).getTid());
+                singles.put(pid, lockStateMap.get(pid).get(0).getTid());
 //                singles
             }
         }
