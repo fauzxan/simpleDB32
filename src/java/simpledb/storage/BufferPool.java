@@ -124,7 +124,7 @@ public class BufferPool {
      */
     public void transactionComplete(TransactionId tid) {
         // some code goes here
-        transactionComplete(tid, true);
+        this.transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
@@ -162,7 +162,7 @@ public class BufferPool {
             }
         }
         catch(Exception e){}
-        lockManager.releaseAll(tid);
+        this.lockManager.releaseAll(tid);
 
     }
 
@@ -187,14 +187,11 @@ public class BufferPool {
         List<Page> modpages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
         for (Page page: modpages) {
             page.markDirty(true, tid);
-
             if (pageMap.size() > maxPages) {
                 evictPage();
             }
-
-            pageMap.put(page.getId(), page);
+            this.pageMap.put(page.getId(), page);
         }
-
     }
 
     /**
