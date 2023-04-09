@@ -120,6 +120,16 @@ public class BufferPool{
         BufferPool.pageSize = DEFAULT_PAGE_SIZE;
     }
 
+    public ConcurrentHashMap<PageId, Frame> getLRUCache() {
+        return this.LRUCache;
+    }
+
+    public void setCache(ConcurrentHashMap<PageId, Frame> newCache) {
+        this.LRUCache = newCache;
+    }
+
+
+
     /**
      * Retrieve the specified page with the associated permissions.
      * Will acquire a lock and may block if that lock is held by another
