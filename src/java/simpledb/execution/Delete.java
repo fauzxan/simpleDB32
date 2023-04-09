@@ -22,8 +22,8 @@ public class Delete extends Operator {
 
     private TransactionId tid;
     private OpIterator child;
-    private boolean isCalled;
-    private TupleDesc outputTD;
+    private boolean called;
+    private TupleDesc td;
 
     /**
      * Constructor specifying the transaction that this delete belongs to as
@@ -38,14 +38,13 @@ public class Delete extends Operator {
         // some code goes here
         this.tid = tid;
         this.child = child;
-        this.isCalled=false;
-        this.outputTD = new TupleDesc(new Type[]{Type.INT_TYPE});
+        this.called =false;
+        this.td = new TupleDesc(new Type[]{Type.INT_TYPE});
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        //reminder: return the TupleDesc of the output tuples of this operator
-        return outputTD;
+        return td;
     }
 
     public void open() throws DbException, TransactionAbortedException {
@@ -58,13 +57,13 @@ public class Delete extends Operator {
         // some code goes here
         super.close();
         child.close();
-        isCalled=false;
+        called =false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
         child.rewind();
-        isCalled=false;
+        called = false;
     }
 
     /**
@@ -78,14 +77,12 @@ public class Delete extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        //TO CHECK >> hasn't been mentioned here, but similar to Insert should be called only once per transaction?
-        //without isCalled check, tests fail on fetchNext
-        if (isCalled)
+        if (called)
             return null;
 
-        isCalled = true;
+        called = true;
 
-        Tuple num_tuple = new Tuple(outputTD);
+        Tuple num_tuple = new Tuple(td);
         int tupleDeleted = 0;
         while(child.hasNext()){
             Tuple t = child.next();

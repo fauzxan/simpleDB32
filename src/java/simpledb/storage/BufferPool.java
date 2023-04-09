@@ -26,18 +26,14 @@ public class BufferPool {
 
     LockManager lockManager;
 
-    /** Mapping of all pages being used **/
     private LinkedHashMap<PageId, Page> pageMap;
 
-    /** Number of pages as passed to constructor **/
     private int maxPages;
 
-    /** Bytes per page, including header. */
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
 
-    /** To iterate through pages for evicting pages */
     Iterator<PageId> pageIter = null;
 
     /** Default number of pages passed to the constructor. This is used by
@@ -95,9 +91,7 @@ public class BufferPool {
             e.printStackTrace();
         }
 
-        //lookup
         Page page =  pageMap.get(pid);
-        //add if new and space available
         if (page==null){
             if(pageMap.size()>=maxPages) {
                 evictPage();
@@ -120,7 +114,6 @@ public class BufferPool {
      */
     public  void unsafeReleasePage(TransactionId tid, PageId pid) {
         // some code goes here
-        // not necessary for lab1|lab2
         lockManager.release(tid, pid);
     }
 
@@ -131,15 +124,12 @@ public class BufferPool {
      */
     public void transactionComplete(TransactionId tid) {
         // some code goes here
-        // not necessary for lab1|lab2
         transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
     public boolean holdsLock(TransactionId tid, PageId pid) {
         // some code goes here
-        // not necessary for lab1|lab2
-        //TO CHECK >> a lock means any or something specific? - yours does check whether the page is locked so its fine
         return lockManager.holdsLock(tid, pid);
     }
 
@@ -152,9 +142,6 @@ public class BufferPool {
      */
     public void transactionComplete(TransactionId tid, boolean commit) {
         // some code goes here
-        // not necessary for lab1|lab2
-
-        //supporting code still required here
         try{
             if (commit){
                 flushPages(tid);
@@ -174,11 +161,8 @@ public class BufferPool {
                 }
             }
         }
-        catch(Exception e){
-            ;
-        }
+        catch(Exception e){}
         lockManager.releaseAll(tid);
-        // CHECK -> Should there be a set image for all the pages after committing them. If yes, should be here
 
     }
 
@@ -200,7 +184,6 @@ public class BufferPool {
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for lab1
         List<Page> modpages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
         for (Page page: modpages) {
             page.markDirty(true, tid);
@@ -230,12 +213,10 @@ public class BufferPool {
     public  void deleteTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        // not necessary for lab1
         try {
             int tableid = t.getRecordId().getPageId().getTableId();
             List<Page> modpages = Database.getCatalog().getDatabaseFile(tableid).deleteTuple(tid, t);
             for (Page page : modpages) {
-                //mark dirty and update in cache(bufferpool map)
                 page.markDirty(true, tid);
                 pageMap.put(page.getId(), page);
             }
@@ -252,7 +233,6 @@ public class BufferPool {
      */
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
-        // not necessary for lab1
         for(PageId pid: pageMap.keySet()){
             flushPage(pid);
         }
@@ -268,7 +248,6 @@ public class BufferPool {
      */
     public synchronized void discardPage(PageId pid) {
         // some code goes here
-        // not necessary for lab1
         pageMap.remove(pid);
     }
 
@@ -278,23 +257,10 @@ public class BufferPool {
      */
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
-        // not necessary for lab1
-
         if (!pageMap.containsKey(pid)){
             return;
         }
-
         Page p = pageMap.get(pid);
-//        if (p.isDirty() == null){
-//            p.setBeforeImage();
-//            p.markDirty(false, null);
-//            return;
-//        }
-//
-//        DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
-//        file.writePage(p);
-//        p.setBeforeImage();
-//        p.markDirty(false, null);
         if(p.isDirty()!=null){
             Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(p);
             p.markDirty(false,null);
@@ -305,11 +271,8 @@ public class BufferPool {
      */
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
-        // not necessary for lab1|lab2
-
         Iterator<PageId> page_iter = pageMap.keySet().iterator();
         while (page_iter.hasNext()) {
-
             PageId pid = page_iter.next();
             Page p = pageMap.get(pid);
             if (p.isDirty() != null && p.isDirty().equals(tid)) {
@@ -324,34 +287,10 @@ public class BufferPool {
      */
     private synchronized  void evictPage() throws DbException {
         // some code goes here
-        // not necessary for lab1
-
-        // pageIter = pageMap.keySet().iterator();
-
-        // while (pageIter.hasNext()) {
-        //     PageId pid = pageIter.next();
-        //     if (pageMap.get(pid).isDirty() == null) {
-        //         pageMap.remove(pid);
-        //         return;
-        //     }
-        //     try {
-        //         flushPage(pid);
-        //     } catch (IOException e) {
-        //         throw new DbException("Error during eviction");
-        //     }
-        //     pageMap.remove(pid);
-        //     return;
-        // }
-        // throw new DbException("All pages are dirty");
-
-        // Instead of just taking the first element in the list,
-        // we will iterate through the HashMap and find non dirty page
-        // Order of going through the pages is from first page added to the last page added
         Iterator<PageId> page_iter = pageMap.keySet().iterator();
         while(page_iter.hasNext()){
             PageId pid = page_iter.next();
 
-            // Dirty pages are not removed, hence are skipped
             if (pageMap.get(pid).isDirty() != null) {
                 continue;
             }
@@ -363,9 +302,6 @@ public class BufferPool {
             discardPage(pid);
             return;
         }
-
         throw new DbException("No non-dirty pages in the buffer pool");
-
     }
-
 }

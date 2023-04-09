@@ -21,7 +21,7 @@ public class Insert extends Operator {
     private TransactionId tid;
     private OpIterator child;
     private int tableid;
-    private boolean isCalled;
+    private boolean called;
     private TupleDesc td;
 
     /**
@@ -40,21 +40,15 @@ public class Insert extends Operator {
     public Insert(TransactionId tid, OpIterator child, int tableId)
             throws DbException {
         // some code goes here
-//        TupleDesc table_td = Database.getCatalog().getTupleDesc(tableId);
-//        TupleDesc opit_td = child.getTupleDesc();
-//        if (!opit_td.equals(table_td))
-//            throw new DbException("tupledesc mismatch");
-
         this.tid = tid;
         this.child = child;
         this.tableid = tableId;
-        this.isCalled=false;
+        this.called =false;
         this.td = new TupleDesc(new Type[]{Type.INT_TYPE});
     }
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        //reminder: return the TupleDesc of the output tuples of this operator
         return td;
     }
 
@@ -68,13 +62,13 @@ public class Insert extends Operator {
         // some code goes here
         super.close();
         child.close();
-        isCalled=false;
+        called =false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
         child.rewind();
-        isCalled=false;
+        called =false;
     }
 
     /**
@@ -92,10 +86,10 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        if (isCalled)
+        if (called)
             return null;
 
-        isCalled = true;
+        called = true;
 
         Tuple num_tuple = new Tuple(td);
         int tupleInserted = 0;
