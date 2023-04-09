@@ -98,6 +98,14 @@ public class BufferPool{
         this.SLEEP = 500;
     }
 
+
+
+    public void unsafe_unpin(PageId pid)
+    {
+        this.LRUCache.get(pid).unpinFrame();
+    }
+
+
     public static int getPageSize() {
         return pageSize;
     }

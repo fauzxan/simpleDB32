@@ -447,6 +447,7 @@ public class HeapFile implements DbFile {
             } else{
                 //if a transaction t finds no free slot on a page p, t may immediately release the lock on p
                 Database.getBufferPool().unsafeReleasePage(tid, pid);
+                Database.getBufferPool().unsafe_unpin(pid);
             }
             pg += 1;
         }
