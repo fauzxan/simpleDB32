@@ -598,6 +598,24 @@ public class BTreeFile implements DbFile {
         // Move some of the tuples from the sibling to the page so
 		// that the tuples are evenly distributed. Be sure to update
 		// the corresponding parent entry.
+		
+		int numSteal = (sibling.getNumTuples() - page.getNumTuples())/2;
+		Iterator<Tuple> steal_iter = isRightSibling? sibling.iterator() : sibling.reverseIterator();
+
+		if(steal_iter == null || numSteal < 1 | !steal_iter.hasNext()){
+			throw new DbException("Cannot Steal | BTreeFile.java | stealFromLeafPage()");
+		}
+
+		Tuple steal = steal_iter.next();
+
+		for(int i=0; i<numSteal; i++){
+			sibling.deleteTuple(steal);
+			page.insertTuple(steal);
+			steal = steal_iter.next();
+		}
+
+		entry.setKey(steal.getField(parent.keyField));
+		parent.updateEntry(entry);
 	}
 
 	/**
@@ -677,6 +695,31 @@ public class BTreeFile implements DbFile {
 		// that the entries are evenly distributed. Be sure to update
 		// the corresponding parent entry. Be sure to update the parent
 		// pointers of all children in the entries that were moved.
+		int numSteal = (leftSibling.getNumEntries() - page.getNumEntries())/2;
+		Iterator<BTreeEntry> steal_iter = leftSibling.reverseIterator();
+
+		if (steal_iter==null || numSteal<1 || !steal_iter.hasNext())
+			throw new DbException("Cannot steal");
+
+		BTreeEntry steal = steal_iter.next();
+		BTreePageId pull_lchild = steal.getRightChild();
+		BTreePageId pull_rchild = page.iterator().next().getLeftChild();
+		BTreeEntry pull = new BTreeEntry(parentEntry.getKey(), pull_lchild, pull_rchild);
+		page.insertEntry(pull);
+
+		leftSibling.deleteKeyAndRightChild(steal);
+
+		for(int i=0; i<numSteal-1; ++i)
+		{
+			page.insertEntry(steal);
+			steal = steal_iter.next();
+			leftSibling.deleteKeyAndRightChild(steal);
+		}
+
+		updateParentPointers(tid, dirtypages, page);
+
+		parentEntry.setKey(steal.getKey());
+		parent.updateEntry(parentEntry);
 	}
 	
 	/**
@@ -704,6 +747,31 @@ public class BTreeFile implements DbFile {
 		// that the entries are evenly distributed. Be sure to update
 		// the corresponding parent entry. Be sure to update the parent
 		// pointers of all children in the entries that were moved.
+		int numSteal = (rightSibling.getNumEntries() - page.getNumEntries())/2;
+		Iterator<BTreeEntry> steal_iter = rightSibling.iterator();
+
+		if (steal_iter==null || numSteal<1 || !steal_iter.hasNext())
+			throw new DbException("Cannot steal");
+
+		BTreeEntry steal = steal_iter.next();
+		BTreePageId pull_lchild = page.reverseIterator().next().getRightChild();
+		BTreePageId pull_rchild = steal.getLeftChild();
+		BTreeEntry pull = new BTreeEntry(parentEntry.getKey(), pull_lchild, pull_rchild);
+		page.insertEntry(pull);
+
+		rightSibling.deleteKeyAndLeftChild(steal);
+
+		for(int i=0; i<numSteal-1; ++i)
+		{
+			page.insertEntry(steal);
+			steal = steal_iter.next();
+			rightSibling.deleteKeyAndLeftChild(steal);
+		}
+
+		updateParentPointers(tid, dirtypages, page);
+
+		parentEntry.setKey(steal.getKey());
+		parent.updateEntry(parentEntry);
 	}
 	
 	/**
