@@ -27,6 +27,14 @@ public class BTreeLeafPage extends BTreePage {
 	private int leftSibling; // leaf node or 0
 	private int rightSibling; // leaf node or 0
 
+	/**
+	 * checkRep checks to see if the fieldid lies in between lower bound and upper bound
+	 * @param fieldid fieldid you want check
+	 * @param lowerBound
+	 * @param upperBound
+	 * @param checkoccupancy
+	 * @param depth
+	 */
 	public void checkRep(int fieldid, Field lowerBound, Field upperBound, boolean checkoccupancy, int depth) {
 		Field prev = lowerBound;
 		assert(this.getId().pgcateg() == BTreePageId.LEAF);
