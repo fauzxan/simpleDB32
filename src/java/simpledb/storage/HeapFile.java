@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 
-import javax.xml.catalog.Catalog;
+//import javax.xml.catalog.Catalog;
 
 /**
  * HeapFile is an implementation of a DbFile that stores a collection of tuples
