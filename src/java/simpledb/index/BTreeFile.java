@@ -870,6 +870,28 @@ public class BTreeFile implements DbFile {
 		// the sibling pointers, and make the right page available for reuse.
 		// Delete the entry in the parent corresponding to the two pages that are merging -
 		// deleteParentEntry() will be useful here
+		Iterator<Tuple> tup_iter = rightPage.iterator();
+		// CHECK -> does the condition below matter, we can still merge i guess
+		// if(tup == null || !tup.hasNext())
+		// 	throw new DbException("No tuples!");
+		int n = rightPage.getNumTuples();
+		for(int i=0; i<n; ++i){
+			Tuple temp = tup_iter.next();
+			rightPage.deleteTuple(temp);   
+			leftPage.insertTuple(temp);
+		}
+		if(rightPage.getRightSiblingId() != null){
+			BTreeLeafPage rightSibling = (BTreeLeafPage) getPage(tid, dirtypages, rightPage.getRightSiblingId(), Permissions.READ_WRITE);
+			rightSibling.setLeftSiblingId(leftPage.getId());
+			leftPage.setRightSiblingId(rightPage.getRightSiblingId());
+			setEmptyPage(tid, dirtypages, rightPage.getId().getPageNumber());
+			deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
+		}
+		else{
+			leftPage.setRightSiblingId(null);
+			setEmptyPage(tid, dirtypages, rightPage.getId().getPageNumber());
+			deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
+		}
 	}
 
 	/**
@@ -903,6 +925,19 @@ public class BTreeFile implements DbFile {
 		// and make the right page available for reuse
 		// Delete the entry in the parent corresponding to the two pages that are merging -
 		// deleteParentEntry() will be useful here
+		Iterator<BTreeEntry> entry_iter = rightPage.iterator();
+		BTreePageId rightChild = leftPage.reverseIterator().next().getRightChild();
+		BTreePageId leftChild = rightPage.iterator().next().getLeftChild();
+		BTreeEntry middle = new BTreeEntry(parentEntry.getKey(), rightChild, leftChild);
+		leftPage.insertEntry(middle);
+		while(entry_iter.hasNext()){
+			BTreeEntry temp = entry_iter.next();
+			rightPage.deleteKeyAndLeftChild(temp);
+			leftPage.insertEntry(temp);
+		}
+		setEmptyPage(tid, dirtypages, rightPage.getId().getPageNumber());
+		updateParentPointers(tid, dirtypages, leftPage);
+		deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
 	}
 	
 	/**
